@@ -141,18 +141,34 @@ class _SectionWalk:
         )
         self.kept_line_indices.add(line_index)
 
+    def _start_part(self, line: PdfLine, line_index: int) -> None:
+        self._flush_held_headings()
+        self.part_heading = line.text
+        self.part_first_line_index = line_index
+        self.is_reading_part_title = True
+        self.division_heading = None
+        self.division_line_index = None
+        self.kept_line_indices.add(line_index)
+
+    def _start_division(self, line: PdfLine, line_index: int) -> None:
+        self._flush_held_headings()
+        self.division_heading = line.text
+        self.division_line_index = line_index
+        self.kept_line_indices.add(line_index)
+
     def _start_section(
         self, printed_number: str, line: PdfLine, page_number: int, line_index: int
     ) -> None:
         self._register_printed_number(printed_number)
-        first_line_index = (
-            self.held_headings[0].line_index if self.held_headings else line_index
-        )
+        opening_lines = [
+            *self.held_headings,
+            _HeldLine(line.text, page_number, line_index),
+        ]
         if self.body_first_line_index is None:
             self.body_first_line_index = min(
                 index
                 for index in (
-                    first_line_index,
+                    opening_lines[0].line_index,
                     self.part_first_line_index,
                     self.division_line_index,
                 )
@@ -164,16 +180,11 @@ class _SectionWalk:
                 heading=" ".join(
                     held_heading.text for held_heading in self.held_headings
                 )
-                if self.held_headings
-                else None,
+                or None,
                 part_heading=self.part_heading,
                 division_heading=self.division_heading,
                 text_lines=[line.text],
-                first_page_number=(
-                    self.held_headings[0].page_number
-                    if self.held_headings
-                    else page_number
-                ),
+                first_page_number=opening_lines[0].page_number,
                 last_page_number=page_number,
                 kind=(
                     LegislationSectionKind.ARTICLE
@@ -184,34 +195,22 @@ class _SectionWalk:
             )
         )
         self.kept_line_indices.update(
-            held_heading.line_index for held_heading in self.held_headings
+            opening_line.line_index for opening_line in opening_lines
         )
-        self.kept_line_indices.add(line_index)
         self.held_headings = []
 
-    def read_line(self, line: PdfLine, page_number: int) -> None:
-        if self.is_body_over:
+    def _read_quoted_line(
+        self, line: PdfLine, page_number: int, line_index: int
+    ) -> None:
+        if line.is_bold and self.held_headings:
+            self.held_headings.append(_HeldLine(line.text, page_number, line_index))
             return
-        if self.quote_depth == 0 and line.text in _BODY_END_LINES:
-            self.is_body_over = True
-            return
-        line_index = len(self.line_lengths)
-        self.line_lengths.append(len(line.text))
-        quote_depth_before = self.quote_depth
-        self.quote_depth = max(
-            0,
-            self.quote_depth
-            + line.text.count(_OPENING_QUOTE)
-            - line.text.count(_CLOSING_QUOTE),
-        )
-        if quote_depth_before > 0:
-            if line.is_bold and self.held_headings:
-                self.held_headings.append(_HeldLine(line.text, page_number, line_index))
-                return
-            self._flush_held_headings()
-            self._add_to_section_text(line.text, page_number, line_index)
-            return
+        self._flush_held_headings()
+        self._add_to_section_text(line.text, page_number, line_index)
 
+    def _read_unquoted_line(
+        self, line: PdfLine, page_number: int, line_index: int
+    ) -> None:
         if not self.sections and line.text == _ARTICLE_ARRANGEMENT_LINE:
             self.is_article_arrangement = True
         if line.text.endswith(_CONTINUED_SUFFIX):
@@ -230,13 +229,7 @@ class _SectionWalk:
             self._add_to_section_text(line.text, page_number, line_index)
             return
         if _PART_PATTERN.match(line.text):
-            self._flush_held_headings()
-            self.part_heading = line.text
-            self.part_first_line_index = line_index
-            self.is_reading_part_title = True
-            self.division_heading = None
-            self.division_line_index = None
-            self.kept_line_indices.add(line_index)
+            self._start_part(line, line_index)
             return
         if (
             self.is_reading_part_title
@@ -249,10 +242,7 @@ class _SectionWalk:
             return
         self.is_reading_part_title = False
         if _DIVISION_PATTERN.match(line.text):
-            self._flush_held_headings()
-            self.division_heading = line.text
-            self.division_line_index = line_index
-            self.kept_line_indices.add(line_index)
+            self._start_division(line, line_index)
             return
 
         section_number_match = _SECTION_NUMBER_PATTERN.match(line.bold_prefix)
@@ -269,7 +259,27 @@ class _SectionWalk:
             self._clear_part_and_division()
         self._add_to_section_text(line.text, page_number, line_index)
 
-    def get_parsed_legislation(
+    def read_line(self, line: PdfLine, page_number: int) -> None:
+        if self.is_body_over:
+            return
+        if self.quote_depth == 0 and line.text in _BODY_END_LINES:
+            self.is_body_over = True
+            return
+        line_index = len(self.line_lengths)
+        self.line_lengths.append(len(line.text))
+        quote_depth_before = self.quote_depth
+        self.quote_depth = max(
+            0,
+            self.quote_depth
+            + line.text.count(_OPENING_QUOTE)
+            - line.text.count(_CLOSING_QUOTE),
+        )
+        if quote_depth_before > 0:
+            self._read_quoted_line(line, page_number, line_index)
+            return
+        self._read_unquoted_line(line, page_number, line_index)
+
+    def build_parsed_legislation(
         self, image_page_numbers: frozenset[int]
     ) -> ParsedLegislation:
         if self.quote_depth > 0:
@@ -328,7 +338,7 @@ def get_parsed_legislation(
             if line.is_margin:
                 continue
             section_walk.read_line(line, pdf_page.page_number)
-    return section_walk.get_parsed_legislation(
+    return section_walk.build_parsed_legislation(
         frozenset(
             pdf_page.page_number for pdf_page in pdf_pages if pdf_page.image_count > 0
         )
