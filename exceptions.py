@@ -16,3 +16,15 @@ class OpenSgLawHarvestRunError(OpenSgLawError):
 
 class OpenSgLawWriteCheckError(OpenSgLawError):
     pass
+
+
+class OpenSgLawSourceStateError(OpenSgLawError):
+    pass
+
+
+class OpenSgLawReasonError(OpenSgLawError):
+    pass
+
+
+class OpenSgLawSourceRowError(OpenSgLawError):
+    pass
