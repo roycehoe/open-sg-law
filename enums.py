@@ -1,0 +1,21 @@
+from enum import StrEnum
+
+
+class SourceName(StrEnum):
+    SSO = "SSO"
+    INTERNET_ARCHIVE = "INTERNET_ARCHIVE"
+    EGAZETTE = "EGAZETTE"
+    DATA_GOV_SG = "DATA_GOV_SG"
+    ELITIGATION = "ELITIGATION"
+    OPENHANSARD_LINKS = "OPENHANSARD_LINKS"
+
+
+class PublishStatus(StrEnum):
+    PUBLISHED = "PUBLISHED"
+    UNPUBLISHED = "UNPUBLISHED"
+
+
+class SsoAccessState(StrEnum):
+    UNTESTED = "UNTESTED"
+    SERVING = "SERVING"
+    CHALLENGED = "CHALLENGED"

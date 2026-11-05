@@ -2,9 +2,11 @@ import socket
 
 import pytest
 import requests
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, func, text
 from sqlalchemy.engine import Engine, make_url
+from sqlmodel import Session, select
 
+from database.source import Source
 from exceptions import OpenSgLawTestGuardError
 from settings import settings
 
@@ -118,3 +120,7 @@ def test_scratch_engine_uses_a_test_schema(scratch_engine: Engine) -> None:
             .scalar_one()
             .startswith("test_")
         )
+
+
+def test_scratch_session_does_not_read_public(scratch_session: Session) -> None:
+    assert scratch_session.exec(select(func.count()).select_from(Source)).one() == 0
