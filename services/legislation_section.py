@@ -17,6 +17,7 @@ _OPENING_QUOTE = "“"
 _CLOSING_QUOTE = "”"
 _BODY_END_LINES = frozenset({"LEGISLATIVE HISTORY", "COMPARATIVE TABLE"})
 _CONTINUED_SUFFIX = "— continued"
+_SSO_ANCHOR_FORMAT = "#pr{printed_number}-"
 _ARTICLE_ARRANGEMENT_LINE = "ARRANGEMENT OF ARTICLES"
 
 
@@ -30,8 +31,10 @@ class ParsedSection:
     text: str
     first_page_number: int
     last_page_number: int
+    sso_anchor: Optional[str]
     kind: LegislationSectionKind
     is_repealed: bool
+    is_on_image_page: bool
 
 
 @dataclass(frozen=True)
@@ -263,7 +266,9 @@ class _SectionWalk:
             self._clear_part_and_division()
         self._add_to_section_text(line.text, page_number, line_index)
 
-    def get_parsed_legislation(self) -> ParsedLegislation:
+    def get_parsed_legislation(
+        self, image_page_numbers: frozenset[int]
+    ) -> ParsedLegislation:
         if self.quote_depth > 0:
             raise OpenSgLawSectionParseError(f"{self.sso_code} leaves a quotation open")
         self._flush_held_headings()
@@ -281,8 +286,22 @@ class _SectionWalk:
                     text="\n".join(open_section.text_lines),
                     first_page_number=open_section.first_page_number,
                     last_page_number=open_section.last_page_number,
+                    sso_anchor=(
+                        None
+                        if open_section.kind == LegislationSectionKind.SCHEDULE
+                        else _SSO_ANCHOR_FORMAT.format(
+                            printed_number=open_section.printed_number
+                        )
+                    ),
                     kind=open_section.kind,
                     is_repealed=open_section.is_repealed,
+                    is_on_image_page=any(
+                        page_number in image_page_numbers
+                        for page_number in range(
+                            open_section.first_page_number,
+                            open_section.last_page_number + 1,
+                        )
+                    ),
                 )
                 for ordinal, open_section in enumerate(self.sections, 1)
             ],
@@ -304,4 +323,8 @@ def get_parsed_legislation(
             if line.is_margin:
                 continue
             section_walk.read_line(line, pdf_page.page_number)
-    return section_walk.get_parsed_legislation()
+    return section_walk.get_parsed_legislation(
+        frozenset(
+            pdf_page.page_number for pdf_page in pdf_pages if pdf_page.image_count > 0
+        )
+    )

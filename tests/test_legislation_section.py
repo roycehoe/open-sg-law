@@ -11,6 +11,7 @@ _FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
 _INTERPRETATION_ACT_CODE = "IA1965"
 _CONSTITUTION_CODE = "CONS1963"
 _APPRAISERS_ACT_CODE = "AA1906"
+_SINGAPORE_TOURISM_BOARD_ACT_CODE = "STBA1963"
 _GAMBLING_DUTIES_ACT_CODE = "GDA2022"
 _GAMBLING_REGULATORY_AUTHORITY_ACT_CODE = "GRASA2022"
 _INTERPRETATION_ACT_FIXTURE_PAGE_COUNT = 2
@@ -287,3 +288,43 @@ def test_a_schedule_label_printed_twice_raises() -> None:
         OpenSgLawSectionParseError, match="AA1906 prints section THE SCHEDULE twice"
     ):
         get_parsed_legislation(_APPRAISERS_ACT_CODE, pdf_pages + pdf_pages)
+
+
+def test_a_section_on_a_page_with_an_image_is_flagged() -> None:
+    pdf_pages = _get_pages("STBA1963-image.pdf")
+
+    parsed_legislation = get_parsed_legislation(
+        _SINGAPORE_TOURISM_BOARD_ACT_CODE, pdf_pages
+    )
+    winding_up_section = parsed_legislation.sections[0]
+
+    assert pdf_pages[0].image_count > 0
+    assert winding_up_section.printed_number == "46"
+    assert winding_up_section.is_on_image_page
+    assert winding_up_section.sso_anchor == "#pr46-"
+
+
+def test_a_schedule_has_no_sso_anchor() -> None:
+    pdf_pages = _get_pages("STBA1963-image.pdf")
+
+    schedule = get_parsed_legislation(
+        _SINGAPORE_TOURISM_BOARD_ACT_CODE, pdf_pages
+    ).sections[-1]
+
+    assert schedule.kind == LegislationSectionKind.SCHEDULE
+    assert schedule.sso_anchor is None
+    assert schedule.is_on_image_page
+
+
+def test_the_sections_of_pages_without_an_image_are_not_flagged() -> None:
+    pdf_pages = _get_pages("IA1965-p5-6.pdf")
+
+    parsed_legislation = get_parsed_legislation(_INTERPRETATION_ACT_CODE, pdf_pages)
+
+    assert all(pdf_page.image_count == 0 for pdf_page in pdf_pages)
+    assert not any(
+        parsed_section.is_on_image_page
+        for parsed_section in parsed_legislation.sections
+    )
+    assert parsed_legislation.sections[0].printed_number == "2"
+    assert parsed_legislation.sections[0].sso_anchor == "#pr2-"
