@@ -40,3 +40,7 @@ class OpenSgLawSsoChallengeError(OpenSgLawError):
 
 class OpenSgLawListingParseError(OpenSgLawError):
     pass
+
+
+class OpenSgLawHarvestHaltError(OpenSgLawError):
+    pass
