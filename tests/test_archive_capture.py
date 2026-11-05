@@ -8,6 +8,7 @@ from services.archive_capture import (
     get_cdx_captures,
     get_latest_act_captures,
 )
+from tests.listing_seed import OFFLINE_PAGE_BODY
 
 _FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures"
 _CLTPA_ANSWER_TEXT = (
@@ -15,9 +16,6 @@ _CLTPA_ANSWER_TEXT = (
 ).read_text()
 _BILLS_BROWSE_ANSWER_TEXT = (
     _FIXTURES_DIRECTORY / "cdx" / "cdx-bills-browse-trimmed.json"
-).read_text()
-_OFFLINE_PAGE_TEXT = (
-    _FIXTURES_DIRECTORY / "archive" / "temporarily-offline-20261104.html"
 ).read_text()
 _CLTPA_CAPTURE_COUNT = 4
 _FIRST_CLTPA_DIGEST = "ST4T5OCMSOIHZSYDRKHU4RJUYRZOSXEH"
@@ -66,7 +64,7 @@ def test_the_bills_browse_answer_holds_no_act_capture() -> None:
 
 def test_the_offline_page_is_not_a_cdx_answer() -> None:
     with pytest.raises(OpenSgLawCdxAnswerError, match="not a JSON list of rows"):
-        get_cdx_captures(_OFFLINE_PAGE_TEXT)
+        get_cdx_captures(OFFLINE_PAGE_BODY.decode("utf-8"))
 
 
 def test_an_empty_list_is_an_answer_with_no_captures() -> None:

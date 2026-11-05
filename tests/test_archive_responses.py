@@ -18,7 +18,12 @@ from exceptions import (
 )
 from populate.archive_responses import populate_archive_responses
 from schemas.source_http_response import SourceHttpResponse
-from tests.listing_seed import FIRST_PAGE_BODY, LISTING_CONTENT_TYPE, SECOND_PAGE_BODY
+from tests.listing_seed import (
+    FIRST_PAGE_BODY,
+    LISTING_CONTENT_TYPE,
+    OFFLINE_PAGE_BODY,
+    SECOND_PAGE_BODY,
+)
 from tests.source_seed import (
     build_source_http_answer,
     get_harvest_runs,
@@ -35,9 +40,6 @@ _DATABASE_HALT_BYTES = 10 * 1_024**3
 _FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures"
 _CLTPA_ANSWER_BODY = (
     _FIXTURES_DIRECTORY / "cdx" / "cdx-cltpa-pdf-trimmed.json"
-).read_bytes()
-_OFFLINE_PAGE_BODY = (
-    _FIXTURES_DIRECTORY / "archive" / "temporarily-offline-20261104.html"
 ).read_bytes()
 _CDX_CONTENT_TYPE = "application/json"
 _PDF_CONTENT_TYPE = "application/pdf"
@@ -86,7 +88,7 @@ _CDX_ANSWER = build_source_http_answer(
     json.dumps([_CDX_HEADER, *_CDX_ROWS]).encode(),
 )
 _CLTPA_ANSWER = build_source_http_answer(200, _CDX_CONTENT_TYPE, _CLTPA_ANSWER_BODY)
-_OFFLINE_ANSWER = build_source_http_answer(200, "text/html", _OFFLINE_PAGE_BODY)
+_OFFLINE_ANSWER = build_source_http_answer(200, "text/html", OFFLINE_PAGE_BODY)
 
 
 def _get_full_run_answers(

@@ -21,6 +21,9 @@ FIRST_PAGE_BODY = (
 SECOND_PAGE_BODY = (
     _FIXTURES_DIRECTORY / "browse-all-p2-20240719-trimmed.html"
 ).read_bytes()
+OFFLINE_PAGE_BODY = (
+    Path(__file__).parent / "fixtures" / "archive" / "temporarily-offline-20261104.html"
+).read_bytes()
 _FIRST_CAPTURE_TIMESTAMP = "20240716234218"
 _SECOND_CAPTURE_TIMESTAMP = "20240719042908"
 

@@ -20,9 +20,6 @@ from tests.source_seed import seed_sources
 _FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures"
 IA1965_BODY = (_FIXTURES_DIRECTORY / "pdf" / "IA1965-p5-6.pdf").read_bytes()
 AA1906_BODY = (_FIXTURES_DIRECTORY / "pdf" / "AA1906-p3-4.pdf").read_bytes()
-OFFLINE_PAGE_TEXT = (
-    _FIXTURES_DIRECTORY / "archive" / "temporarily-offline-20261104.html"
-).read_text()
 IA1965_ORIGINAL_URL = "https://sso.agc.gov.sg/Act/IA1965?ViewType=Pdf&_=20251216194555"
 IA1965_ARCHIVE_TIMESTAMP = "20260101041857"
 IA1965_ARCHIVE_URL = (

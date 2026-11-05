@@ -20,7 +20,6 @@ from tests.document_seed import (
     IA1965_ORIGINAL_URL,
     IA1965_OTHER_SSO_URL,
     IA1965_POINT_IN_TIME_URL,
-    OFFLINE_PAGE_TEXT,
     SSO_FETCHED_AT,
     build_cdx_answer_text,
     seed_cdx_answer,
@@ -28,6 +27,7 @@ from tests.document_seed import (
     seed_harvest_run,
     seed_legislation,
 )
+from tests.listing_seed import OFFLINE_PAGE_BODY
 from tests.source_seed import seed_sources
 
 _IA1965_TITLE = "Interpretation Act 1965"
@@ -202,7 +202,7 @@ def test_the_offline_page_is_a_skipped_cdx_answer_and_gives_no_digest(
     seed_cdx_answer(
         scratch_session,
         seed_harvest_run(scratch_session, SourceName.INTERNET_ARCHIVE),
-        OFFLINE_PAGE_TEXT,
+        OFFLINE_PAGE_BODY.decode("utf-8"),
     )
 
     legislation_version_write = get_legislation_version_write(scratch_session)
