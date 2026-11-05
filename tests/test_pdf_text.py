@@ -5,7 +5,7 @@ import pytest
 from exceptions import OpenSgLawPdfTextError
 from utils.pdf_text import PdfLine, PdfPage, get_pdf_pages, is_bold_font
 
-_FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
+_FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
 _INTERPRETATION_ACT_PAGE_COUNT = 2
 
 _BOLD_FONT_NAMES = (
@@ -25,7 +25,7 @@ _NOT_BOLD_FONT_NAMES = (
 
 
 def _get_pages(file_name: str) -> list[PdfPage]:
-    return get_pdf_pages((_FIXTURE_DIRECTORY / file_name).read_bytes())
+    return get_pdf_pages((_FIXTURES_DIRECTORY / file_name).read_bytes())
 
 
 def _get_line(page: PdfPage, text_start: str) -> PdfLine:

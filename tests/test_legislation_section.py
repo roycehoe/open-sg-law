@@ -7,7 +7,7 @@ from exceptions import OpenSgLawSectionParseError
 from services.legislation_section import ParsedSection, get_parsed_legislation
 from utils.pdf_text import PdfPage, get_pdf_pages
 
-_FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
+_FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
 _INTERPRETATION_ACT_CODE = "IA1965"
 _CONSTITUTION_CODE = "CONS1963"
 _APPRAISERS_ACT_CODE = "AA1906"
@@ -20,7 +20,7 @@ _GAMBLING_DUTIES_ACT_FIXTURE_PAGE_COUNT = 3
 
 
 def _get_pages(file_name: str) -> list[PdfPage]:
-    return get_pdf_pages((_FIXTURE_DIRECTORY / file_name).read_bytes())
+    return get_pdf_pages((_FIXTURES_DIRECTORY / file_name).read_bytes())
 
 
 def _get_printed_numbers(parsed_sections: list[ParsedSection]) -> list[str]:

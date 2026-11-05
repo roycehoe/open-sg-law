@@ -12,13 +12,13 @@ from services.legislation_version import (
 from utils.legislation_version_update import LegislationVersionNewestUpdate
 from utils.pdf_text import PdfPage, get_pdf_pages
 
-_FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
+_FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
 _EARLIER_CAPTURED_AT = datetime(2026, 1, 1, 4, 18, 57, tzinfo=timezone.utc)
 _LATER_CAPTURED_AT = datetime(2026, 11, 5, 19, 0, tzinfo=timezone.utc)
 
 
 def _get_pages(file_name: str) -> list[PdfPage]:
-    return get_pdf_pages((_FIXTURE_DIRECTORY / file_name).read_bytes())
+    return get_pdf_pages((_FIXTURES_DIRECTORY / file_name).read_bytes())
 
 
 def test_the_version_in_force_line_gives_the_date() -> None:
