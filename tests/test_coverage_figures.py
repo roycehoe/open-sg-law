@@ -1,4 +1,3 @@
-from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -6,19 +5,16 @@ from sqlalchemy.engine import Engine
 from sqlmodel import Session
 
 import scripts.coverage_figures as coverage_figures_script
-from crud.act_history_entry import CRUDActHistoryEntry
-from crud.bill import CRUDBill
 from crud.legislation_section import CRUDLegislationSection
 from crud.legislation_version import CRUDLegislationVersion
-from database.act_history_entry import ActHistoryEntry
-from database.bill import Bill
 from database.legislation_section import LegislationSection
-from enums import ActHistoryEntryKind, BillLinkSource, LegislationSectionKind
+from enums import LegislationSectionKind
 from exceptions import OpenSgLawWriteCheckError
 from populate.coverage_figures import get_coverage_figures
 from scripts.coverage_figures import coverage_figures
 from services.coverage_figures import VersionTextShare
 from tests.document_seed import seed_ia1965_version, seed_legislation
+from tests.hansard_link_seed import add_competition_bill_and_history
 from tests.source_seed import seed_sources
 from utils.legislation_version_update import LegislationVersionNewestUpdate
 
@@ -103,37 +99,7 @@ def _seed_figures(session: Session) -> None:
             ),
         ]
     )
-    bill = Bill(
-        title="Competition Bill",
-        title_key="competition",
-        first_sitting_date=datetime(2004, 9, 1),
-        last_sitting_date=datetime(2004, 10, 19),
-        is_passed=True,
-    )
-    CRUDBill(session).add_many([bill])
-    assert bill.id is not None
-    CRUDActHistoryEntry(session).add_many(
-        [
-            ActHistoryEntry(
-                ordinal=1,
-                printed_text="Act 46 of 2004",
-                printed_law_number="46",
-                printed_title="Competition Act",
-                kind=ActHistoryEntryKind.ACT,
-                bill_link_source=BillLinkSource.FIRST_READING_DATE,
-                legislation_id=1,
-                bill_id=bill.id,
-            ),
-            ActHistoryEntry(
-                ordinal=2,
-                printed_text="Revised Edition 2006",
-                printed_law_number="",
-                printed_title="Competition Act",
-                kind=ActHistoryEntryKind.REVISED_EDITION,
-                legislation_id=1,
-            ),
-        ]
-    )
+    add_competition_bill_and_history(session, 1)
     session.commit()
 
 

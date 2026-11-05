@@ -7,9 +7,9 @@ from sqlmodel import Session
 from crud.act_history_entry import CRUDActHistoryEntry
 from crud.bill import CRUDBill
 from crud.bill_report import CRUDBillReport
-from crud.legislation import CRUDLegislation
-from database.legislation import Legislation
-from enums import ActHistoryEntryKind, BillLinkSource, SourceName
+from database.act_history_entry import ActHistoryEntry
+from database.bill import Bill
+from enums import ActHistoryEntryKind, BillLinkSource
 from schemas.act_link_plan import (
     ActLinkPlan,
     PlannedAct,
@@ -17,6 +17,7 @@ from schemas.act_link_plan import (
     PlannedBill,
 )
 from schemas.hansard_report_export import HansardReportExport, HansardReportExportRow
+from tests.document_seed import seed_legislation
 from tests.source_seed import seed_sources
 
 ACT_LINK_PLAN_SHA256 = "a" * 64
@@ -122,22 +123,43 @@ def build_report_export(report_ids: tuple[int, ...]) -> HansardReportExport:
     )
 
 
-def seed_legislation(session: Session) -> None:
+def seed_hansard_link_legislation(session: Session) -> None:
     seed_sources(session)
-    CRUDLegislation(session).add_many(
+    seed_legislation(
+        session, {"EDA2025": "Estate Duty Act 2025", "WA2026": "Water Act 2026"}
+    )
+
+
+def add_competition_bill_and_history(session: Session, legislation_id: int) -> int:
+    bill = Bill(
+        title="Competition Bill",
+        title_key="competition",
+        first_sitting_date=datetime(2004, 9, 1),
+        last_sitting_date=datetime(2004, 10, 19),
+        is_passed=True,
+    )
+    CRUDBill(session).add_many([bill])
+    assert bill.id is not None
+    CRUDActHistoryEntry(session).add_many(
         [
-            Legislation(
-                sso_code="EDA2025",
-                title="Estate Duty Act 2025",
-                is_in_newest_listing=True,
-                listing_source=SourceName.SSO,
+            ActHistoryEntry(
+                ordinal=1,
+                printed_text="Act 46 of 2004",
+                printed_law_number="46",
+                printed_title="Competition Act",
+                kind=ActHistoryEntryKind.ACT,
+                bill_link_source=BillLinkSource.FIRST_READING_DATE,
+                legislation_id=legislation_id,
+                bill_id=bill.id,
             ),
-            Legislation(
-                sso_code="WA2026",
-                title="Water Act 2026",
-                is_in_newest_listing=True,
-                listing_source=SourceName.SSO,
+            ActHistoryEntry(
+                ordinal=2,
+                printed_text="Revised Edition 2006",
+                printed_law_number="",
+                printed_title="Competition Act",
+                kind=ActHistoryEntryKind.REVISED_EDITION,
+                legislation_id=legislation_id,
             ),
         ]
     )
-    session.commit()
+    return bill.id

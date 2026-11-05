@@ -1,14 +1,14 @@
-from datetime import date, datetime
+from datetime import date
 
 from sqlmodel import Session, col, select
 
 from crud.act_history_entry import CRUDActHistoryEntry
 from crud.bill import CRUDBill
 from crud.bill_report import CRUDBillReport
-from database.act_history_entry import ActHistoryEntry
-from database.bill import Bill, BillReport
+from database.bill import BillReport
 from database.legislation import Legislation
-from enums import ActHistoryEntryKind, BillLinkSource, SourceName
+from tests.document_seed import seed_legislation
+from tests.hansard_link_seed import add_competition_bill_and_history
 from tests.source_seed import seed_sources
 
 _ENTRY_COUNT = 2
@@ -17,24 +17,10 @@ _LINKED_ENTRY_COUNT = 1
 
 def _add_linked_rows(session: Session) -> None:
     seed_sources(session)
-    legislation = Legislation(
-        sso_code="TCA2005",
-        title="Trade Competition Act 2005",
-        is_in_newest_listing=True,
-        listing_source=SourceName.SSO,
-    )
-    session.add(legislation)
-    session.flush()
-    bill = Bill(
-        title="Competition Bill",
-        title_key="competition",
-        first_sitting_date=datetime(2004, 9, 1),
-        last_sitting_date=datetime(2004, 10, 19),
-        is_passed=True,
-    )
-    CRUDBill(session).add_many([bill])
-    assert legislation.id is not None
-    assert bill.id is not None
+    seed_legislation(session, {"TCA2005": "Trade Competition Act 2005"})
+    legislation_id = session.exec(select(Legislation.id)).one()
+    assert legislation_id is not None
+    bill_id = add_competition_bill_and_history(session, legislation_id)
     CRUDBillReport(session).add_many(
         [
             BillReport(
@@ -44,30 +30,8 @@ def _add_linked_rows(session: Session) -> None:
                 sitting_date=date(2004, 10, 19),
                 title="Competition Bill",
                 hansard_row_id=7,
-                bill_id=bill.id,
+                bill_id=bill_id,
             )
-        ]
-    )
-    CRUDActHistoryEntry(session).add_many(
-        [
-            ActHistoryEntry(
-                ordinal=1,
-                printed_text="Act 46 of 2004",
-                printed_law_number="46",
-                printed_title="Competition Act",
-                kind=ActHistoryEntryKind.ACT,
-                bill_link_source=BillLinkSource.FIRST_READING_DATE,
-                legislation_id=legislation.id,
-                bill_id=bill.id,
-            ),
-            ActHistoryEntry(
-                ordinal=2,
-                printed_text="Revised Edition 2006",
-                printed_law_number="",
-                printed_title="Competition Act",
-                kind=ActHistoryEntryKind.REVISED_EDITION,
-                legislation_id=legislation.id,
-            ),
         ]
     )
     session.commit()

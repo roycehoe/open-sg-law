@@ -14,7 +14,7 @@ from tests.hansard_link_seed import (
     build_act_link_plan,
     build_report_export,
     get_stored_link_counts,
-    seed_legislation,
+    seed_hansard_link_legislation,
 )
 
 _FULL_COUNTS = StoredLinkCounts(
@@ -57,7 +57,7 @@ def _get_bill_ids(session: Session) -> list[int]:
 
 
 def test_the_plan_reads_the_stored_sso_codes(scratch_session: Session) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
 
     hansard_link_plan = _get_plan(scratch_session)
 
@@ -68,7 +68,7 @@ def test_the_plan_reads_the_stored_sso_codes(scratch_session: Session) -> None:
 def test_writing_a_plan_stores_its_rows_with_the_links(
     scratch_session: Session,
 ) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
 
     write_hansard_link_plan(scratch_session, _get_plan(scratch_session))
     scratch_session.commit()
@@ -86,7 +86,7 @@ def test_writing_a_plan_stores_its_rows_with_the_links(
 
 
 def test_writing_a_changed_plan_replaces_every_row(scratch_session: Session) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
     hansard_link_plan = _get_plan(scratch_session)
     write_hansard_link_plan(scratch_session, hansard_link_plan)
     scratch_session.commit()
@@ -102,7 +102,7 @@ def test_writing_a_changed_plan_replaces_every_row(scratch_session: Session) -> 
 def test_a_failure_after_the_delete_leaves_the_earlier_rows_after_a_rollback(
     scratch_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
     hansard_link_plan = _get_plan(scratch_session)
     write_hansard_link_plan(scratch_session, hansard_link_plan)
     scratch_session.commit()

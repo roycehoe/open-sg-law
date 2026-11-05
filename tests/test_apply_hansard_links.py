@@ -25,7 +25,7 @@ from tests.hansard_link_seed import (
     build_act_link_plan,
     build_report_export,
     get_stored_link_counts,
-    seed_legislation,
+    seed_hansard_link_legislation,
 )
 
 _PROTECTED_DATABASE_URL = "postgresql://u:p@localhost:5435/x"
@@ -113,7 +113,7 @@ def _get_history_entry_keys(session: Session) -> list[_HistoryEntryKey]:
 def test_dry_run_logs_the_hashes_and_counts_and_writes_the_plan_file_only(
     scratch_session: Session, log_recorder: _LogRecorder, tmp_path: Path
 ) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
     input_files = _write_inputs(tmp_path, build_report_export((10, 11, 12, 13)))
 
     apply_hansard_links(
@@ -149,7 +149,7 @@ def test_dry_run_logs_the_hashes_and_counts_and_writes_the_plan_file_only(
 def test_commit_writes_the_reviewed_plan(
     scratch_session: Session, log_recorder: _LogRecorder, tmp_path: Path
 ) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
     input_files = _write_inputs(tmp_path, build_report_export((10, 11, 12)))
     apply_hansard_links(
         input_files.plan_file,
@@ -173,7 +173,7 @@ def test_commit_writes_the_reviewed_plan(
 def test_commit_twice_leaves_the_same_rows(
     scratch_session: Session, log_recorder: _LogRecorder, tmp_path: Path
 ) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
     input_files = _write_inputs(tmp_path, build_report_export((10, 11, 12)))
     apply_hansard_links(
         input_files.plan_file,
@@ -205,7 +205,7 @@ def test_commit_twice_leaves_the_same_rows(
 def test_commit_refuses_a_plan_that_differs_from_the_reviewed_plan(
     scratch_session: Session, log_recorder: _LogRecorder, tmp_path: Path
 ) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
     input_files = _write_inputs(tmp_path, build_report_export((10, 11, 12)))
     apply_hansard_links(
         input_files.plan_file,
@@ -233,7 +233,7 @@ def test_commit_refuses_a_plan_that_differs_from_the_reviewed_plan(
 def test_commit_refuses_a_changed_input_file(
     scratch_session: Session, log_recorder: _LogRecorder, tmp_path: Path
 ) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
     input_files = _write_inputs(tmp_path, build_report_export((10, 11, 12)))
     apply_hansard_links(
         input_files.plan_file,
@@ -259,7 +259,7 @@ def test_commit_refuses_a_changed_input_file(
 def test_a_missing_report_id_is_refused(
     scratch_session: Session, log_recorder: _LogRecorder, tmp_path: Path
 ) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
     input_files = _write_inputs(tmp_path, build_report_export((10, 12)))
 
     with pytest.raises(
@@ -279,7 +279,7 @@ def test_a_missing_report_id_is_refused(
 def test_a_missing_sso_code_is_refused(
     scratch_session: Session, log_recorder: _LogRecorder, tmp_path: Path
 ) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
     input_files = _write_inputs(tmp_path, build_report_export((10, 11, 12)))
     act_link_plan = build_act_link_plan()
     unknown_act = act_link_plan.acts[1].model_copy(update={"sso_code": "UNKNOWN9"})
@@ -309,7 +309,7 @@ def test_commit_refuses_the_protected_port_before_any_row_is_written(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    seed_legislation(scratch_session)
+    seed_hansard_link_legislation(scratch_session)
     input_files = _write_inputs(tmp_path, build_report_export((10, 11, 12)))
     apply_hansard_links(
         input_files.plan_file,
