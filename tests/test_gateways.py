@@ -13,6 +13,7 @@ from gateway.http import (
     ELITIGATION_PACER,
     INTERNET_ARCHIVE_PACER,
     SSO_PACER,
+    CrawlPacer,
 )
 from gateway.internet_archive import (
     get_archive_capture_response,
@@ -76,25 +77,33 @@ class _RecordedSsoRequest:
     is_redirect_allowed: object
 
 
-@pytest.fixture
-def recorded_waits(monkeypatch: pytest.MonkeyPatch) -> list[float]:
+def _record_waits(monkeypatch: pytest.MonkeyPatch, pacer: CrawlPacer) -> list[float]:
     waits: list[float] = []
-    monkeypatch.setattr(ELITIGATION_PACER, "sleep", waits.append)
-    monkeypatch.setattr(ELITIGATION_PACER, "last_request_ended_at", None)
+    monkeypatch.setattr(pacer, "sleep", waits.append)
+    monkeypatch.setattr(pacer, "last_request_ended_at", None)
     return waits
 
 
-def test_elitigation_gateways_send_the_user_agent_and_are_paced(
-    recorded_waits: list[float], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    recorded_requests: list[_RecordedRequest] = []
+@pytest.fixture
+def recorded_requests(monkeypatch: pytest.MonkeyPatch) -> list[_RecordedRequest]:
+    requests_recorded: list[_RecordedRequest] = []
 
     def fake_get(url: str, headers: dict, **kwargs: object) -> requests.Response:
-        recorded_requests.append(_RecordedRequest(url, headers))
+        requests_recorded.append(_RecordedRequest(url, headers))
         return _build_response(url, _HTTP_OK, _BODY)
 
     monkeypatch.setattr(requests, "get", fake_get)
+    return requests_recorded
 
+
+@pytest.fixture
+def recorded_waits(monkeypatch: pytest.MonkeyPatch) -> list[float]:
+    return _record_waits(monkeypatch, ELITIGATION_PACER)
+
+
+def test_elitigation_gateways_send_the_user_agent_and_are_paced(
+    recorded_waits: list[float], recorded_requests: list[_RecordedRequest]
+) -> None:
     listing_response = get_elitigation_listing_response(
         _COURT_FILTER, _YEAR, _PAGE_NUMBER
     )
@@ -202,23 +211,12 @@ def test_the_sso_listing_urls_are_zero_based_after_the_first_page() -> None:
 
 @pytest.fixture
 def recorded_archive_waits(monkeypatch: pytest.MonkeyPatch) -> list[float]:
-    waits: list[float] = []
-    monkeypatch.setattr(INTERNET_ARCHIVE_PACER, "sleep", waits.append)
-    monkeypatch.setattr(INTERNET_ARCHIVE_PACER, "last_request_ended_at", None)
-    return waits
+    return _record_waits(monkeypatch, INTERNET_ARCHIVE_PACER)
 
 
 def test_archive_gateways_send_the_user_agent_and_are_paced(
-    recorded_archive_waits: list[float], monkeypatch: pytest.MonkeyPatch
+    recorded_archive_waits: list[float], recorded_requests: list[_RecordedRequest]
 ) -> None:
-    recorded_requests: list[_RecordedRequest] = []
-
-    def fake_get(url: str, headers: dict, **kwargs: object) -> requests.Response:
-        recorded_requests.append(_RecordedRequest(url, headers))
-        return _build_response(url, _HTTP_OK, _BODY)
-
-    monkeypatch.setattr(requests, "get", fake_get)
-
     cdx_response = get_archive_cdx_response(_ARCHIVE_URL_PREFIX, _PDF_MIME_TYPE)
     capture_response = get_archive_capture_response(
         _ARCHIVE_CAPTURE_TIMESTAMP, _ARCHIVE_ORIGINAL_URL
