@@ -24,7 +24,11 @@ from gateway.internet_archive import (
 )
 from logs import logger
 from schemas.source_http_response import SourceHttpResponse
-from services.archive_capture import get_cdx_captures, get_latest_act_captures
+from services.archive_capture import (
+    CdxCapture,
+    get_cdx_captures,
+    get_latest_act_captures,
+)
 from services.harvest_run import (
     get_stale_run_cutoff,
     validate_can_send_after_failures,
@@ -200,7 +204,7 @@ def _fetch_listing_captures(
         partial(
             get_archive_capture_response,
             capture_timestamp,
-            build_sso_listing_url(0),
+            build_sso_listing_url(page_index=0),
         ),
         ResponseKind.LISTING_PAGE,
         _is_listing_page,
@@ -225,12 +229,12 @@ def _fetch_listing_captures(
         )
 
 
-def _fetch_act_captures(
+def _fetch_latest_act_captures(
     session: Session,
     harvest_run: HarvestRun,
     harvest_run_id: int,
     night_progress: _NightProgress,
-) -> None:
+) -> list[CdxCapture]:
     cdx_response = _send_and_store_request(
         session,
         harvest_run,
@@ -253,6 +257,18 @@ def _fetch_act_captures(
         cdx_captures = get_cdx_captures(cdx_answer_text)
     except OpenSgLawCdxAnswerError as error:
         raise OpenSgLawHarvestHaltError(str(error)) from error
+    return get_latest_act_captures(cdx_captures)
+
+
+def _fetch_act_captures(
+    session: Session,
+    harvest_run: HarvestRun,
+    harvest_run_id: int,
+    night_progress: _NightProgress,
+) -> None:
+    latest_captures = _fetch_latest_act_captures(
+        session, harvest_run, harvest_run_id, night_progress
+    )
     stored_capture_urls = set(
         CRUDSourceResponse(
             session
@@ -260,7 +276,6 @@ def _fetch_act_captures(
             SourceName.INTERNET_ARCHIVE, ResponseKind.DOCUMENT, _HTTP_OK
         )
     )
-    latest_captures = get_latest_act_captures(cdx_captures)
     skipped_capture_count = 0
     for capture in latest_captures:
         capture_url = build_archive_capture_url(capture.timestamp, capture.original_url)
