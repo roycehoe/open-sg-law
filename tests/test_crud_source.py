@@ -23,14 +23,6 @@ def test_get_by_name_returns_the_sso_row_untested(scratch_session: Session) -> N
     assert source.sso_access_state == SsoAccessState.UNTESTED
 
 
-def test_get_all_returns_the_six_rows(scratch_session: Session) -> None:
-    seed_sources(scratch_session)
-
-    sources = CRUDSource(scratch_session).get_all()
-
-    assert [source.name for source in sources] == list(SourceName)
-
-
 def test_get_all_for_update_locks_every_row(
     scratch_engine: Engine, scratch_session: Session
 ) -> None:

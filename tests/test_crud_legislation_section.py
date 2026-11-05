@@ -84,9 +84,6 @@ def test_sections_are_read_back_in_ordinal_order(scratch_session: Session) -> No
         scratch_session
     ).get_rows_by_legislation_version_id(legislation_version_id)
 
-    assert CRUDLegislationSection(scratch_session).get_count() == len(
-        legislation_section_rows
-    )
     assert legislation_section_rows == [
         LegislationSectionRow(
             ordinal=ordinal,
@@ -119,7 +116,6 @@ def test_deleting_a_versions_sections_leaves_none(scratch_session: Session) -> N
         legislation_version_id
     )
 
-    assert CRUDLegislationSection(scratch_session).get_count() == 0
     assert (
         CRUDLegislationSection(scratch_session).get_count_by_legislation_version_id(
             legislation_version_id

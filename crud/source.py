@@ -10,10 +10,6 @@ class CRUDSource:
     def __init__(self, session: Session):
         self.session = session
 
-    def get_all(self) -> list[Source]:
-        statement = select(Source).order_by(col(Source.id))
-        return list(self.session.exec(statement).all())
-
     # NOTE: populate_existing, because a locked read of a row already in the session would keep its stale state
     def get_all_for_update(self) -> list[Source]:
         statement = (

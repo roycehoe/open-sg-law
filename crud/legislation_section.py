@@ -37,10 +37,6 @@ class CRUDLegislationSection:
         self.session.add_all(legislation_sections)
         self.session.flush()
 
-    def get_count(self) -> int:
-        statement = select(func.count()).select_from(LegislationSection)
-        return self.session.exec(statement).one()
-
     def get_counts_by_kind(self) -> list[SectionKindCountRow]:
         statement = (
             select(LegislationSection.kind, func.count())
