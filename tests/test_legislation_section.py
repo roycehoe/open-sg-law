@@ -14,6 +14,7 @@ _APPRAISERS_ACT_CODE = "AA1906"
 _SINGAPORE_TOURISM_BOARD_ACT_CODE = "STBA1963"
 _GAMBLING_DUTIES_ACT_CODE = "GDA2022"
 _GAMBLING_REGULATORY_AUTHORITY_ACT_CODE = "GRASA2022"
+_ELECTRIC_VEHICLES_CHARGING_ACT_CODE = "EVCA2022"
 _INTERPRETATION_ACT_FIXTURE_PAGE_COUNT = 2
 _GAMBLING_DUTIES_ACT_FIXTURE_PAGE_COUNT = 3
 
@@ -100,6 +101,25 @@ def test_a_section_quoted_across_pages_stays_in_the_amending_section() -> None:
     assert "29.—(1) The Authority may establish a system" in amending_section.text
     assert "“Electronic service system" in amending_section.text
     assert amending_section.last_page_number == _GAMBLING_DUTIES_ACT_FIXTURE_PAGE_COUNT
+
+
+def test_a_heading_whose_quoted_term_wraps_onto_a_second_line_stays_one_heading() -> (
+    None
+):
+    pdf_pages = _get_pages("EVCA2022-p13.pdf")
+
+    parsed_legislation = get_parsed_legislation(
+        _ELECTRIC_VEHICLES_CHARGING_ACT_CODE, pdf_pages
+    )
+    supply_section, operator_section = parsed_legislation.sections
+
+    assert supply_section.printed_number == "3"
+    assert supply_section.text.endswith("(b) resale.")
+    assert operator_section.printed_number == "4"
+    assert operator_section.heading == (
+        "Meanings of “charging station operator”, “electric vehicle"
+        " charging service” and associated terms"
+    )
 
 
 def test_a_quoted_line_with_a_closing_quote_before_any_opening_one_starts_nothing() -> (

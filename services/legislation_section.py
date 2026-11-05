@@ -205,6 +205,9 @@ class _SectionWalk:
             - line.text.count(_CLOSING_QUOTE),
         )
         if quote_depth_before > 0:
+            if line.is_bold and self.held_headings:
+                self.held_headings.append(_HeldLine(line.text, page_number, line_index))
+                return
             self._flush_held_headings()
             self._add_to_section_text(line.text, page_number, line_index)
             return
