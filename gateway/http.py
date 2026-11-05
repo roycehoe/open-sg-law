@@ -7,6 +7,8 @@ from typing import Optional
 
 import requests
 
+from schemas.source_http_response import SourceHttpResponse
+
 CRAWL_USER_AGENT = "open-sg-law (+https://github.com/roycehoe/open-sg-law/issues)"
 CRAWL_HEADERS = {"User-Agent": CRAWL_USER_AGENT}
 
@@ -97,3 +99,15 @@ def send_with_retry(
             response.raise_for_status()
         pacer.sleep(_get_backoff_seconds(attempt))
     raise requests.exceptions.RetryError(f"No answer after {MAX_RETRIES + 1} sends")
+
+
+def build_source_http_response(
+    requested_url: str, response: requests.Response
+) -> SourceHttpResponse:
+    return SourceHttpResponse(
+        status_code=response.status_code,
+        requested_url=requested_url,
+        final_url=response.url,
+        content_type=response.headers.get("Content-Type"),
+        body=response.content,
+    )
