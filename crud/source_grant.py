@@ -29,18 +29,19 @@ class CRUDSourceGrant:
             .all()
         )
 
+    def _get_quoted_identifier(self, identifier: str) -> str:
+        return self.session.get_bind().dialect.identifier_preparer.quote(identifier)
+
     def grant_select(self, table_schema: str, table_name: str, role_name: str) -> None:
-        identifier_preparer = self.session.get_bind().dialect.identifier_preparer
         statement = text(
-            f"GRANT SELECT ON TABLE {identifier_preparer.quote(table_schema)}.{identifier_preparer.quote(table_name)}"
-            f" TO {identifier_preparer.quote(role_name)}"
+            f"GRANT SELECT ON TABLE {self._get_quoted_identifier(table_schema)}.{self._get_quoted_identifier(table_name)}"
+            f" TO {self._get_quoted_identifier(role_name)}"
         )
         self.session.execute(statement)
 
     def revoke_select(self, table_schema: str, table_name: str, role_name: str) -> None:
-        identifier_preparer = self.session.get_bind().dialect.identifier_preparer
         statement = text(
-            f"REVOKE SELECT ON TABLE {identifier_preparer.quote(table_schema)}.{identifier_preparer.quote(table_name)}"
-            f" FROM {identifier_preparer.quote(role_name)}"
+            f"REVOKE SELECT ON TABLE {self._get_quoted_identifier(table_schema)}.{self._get_quoted_identifier(table_name)}"
+            f" FROM {self._get_quoted_identifier(role_name)}"
         )
         self.session.execute(statement)
