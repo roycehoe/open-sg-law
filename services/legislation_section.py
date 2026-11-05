@@ -275,7 +275,9 @@ class _SectionWalk:
         if self.quote_depth > 0:
             raise OpenSgLawSectionParseError(f"{self.sso_code} leaves a quotation open")
         self._flush_held_headings()
-        if not self.sections or self.body_first_line_index is None:
+        if not self.sections:
+            raise OpenSgLawSectionParseError(f"{self.sso_code} prints no section")
+        if self.body_first_line_index is None:
             raise OpenSgLawSectionParseError(f"{self.sso_code} prints no section")
         body_first_line_index = self.body_first_line_index
         return ParsedLegislation(
@@ -306,7 +308,7 @@ class _SectionWalk:
                         )
                     ),
                 )
-                for ordinal, open_section in enumerate(self.sections, 1)
+                for ordinal, open_section in enumerate(self.sections, start=1)
             ],
             body_character_count=sum(self.line_lengths[body_first_line_index:]),
             section_character_count=sum(

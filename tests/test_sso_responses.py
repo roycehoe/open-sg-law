@@ -25,14 +25,13 @@ from exceptions import (
     OpenSgLawSsoWindowError,
 )
 from gateway.http import SSO_PACER
-from gateway.sso import build_sso_listing_url
 from populate.sso_responses import populate_sso_responses
 from schemas.source_http_response import SourceHttpResponse
 from services.source_response import build_source_response
 from services.sso_request import get_act_pdf_paths_to_fetch
 from settings import settings
 from tests.source_seed import seed_sources
-from utils.sso_listing import SsoListingRow
+from utils.sso_listing import SsoListingRow, build_sso_listing_url
 
 _SINGAPORE = ZoneInfo("Asia/Singapore")
 _REQUEST_GAP = timedelta(seconds=60)
@@ -40,7 +39,7 @@ _NIGHT_START = datetime(2026, 11, 6, 3, 0, tzinfo=_SINGAPORE)
 _BEFORE_WINDOW = datetime(2026, 11, 6, 2, 59, tzinfo=_SINGAPORE)
 _NEAR_CUTOFF = datetime(2026, 11, 6, 6, 52, tzinfo=_SINGAPORE)
 _CUTOFF = datetime(2026, 11, 6, 6, 55, tzinfo=_SINGAPORE)
-_DATABASE_HALT_BYTES = 10 * 1024**3
+_DATABASE_HALT_BYTES = 10 * 1_024**3
 _FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures" / "sso_listing"
 _FIRST_LISTING_BODY = (
     _FIXTURES_DIRECTORY / "browse-all-p1-20240716-trimmed.html"

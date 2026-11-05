@@ -12,18 +12,13 @@ from gateway.http import (
 )
 from schemas.source_http_response import SourceHttpResponse
 from settings import settings
+from utils.archive_capture_url import build_archive_capture_url
 
 _CDX_PATH = "/cdx/search/cdx"
-_CAPTURE_PATH = "/web/{timestamp}id_/{original_url}"
 _HTTP_TOO_MANY_REQUESTS = 429
 _TOO_MANY_REQUESTS_WAIT_SECONDS = 300
 _MAX_TOO_MANY_REQUESTS_WAITS = 3
 _REQUEST_TIMEOUT_SECONDS = 60
-
-
-def build_archive_capture_url(timestamp: str, original_url: str) -> str:
-    capture_path = _CAPTURE_PATH.format(timestamp=timestamp, original_url=original_url)
-    return f"{settings.internet_archive_base_url}{capture_path}"
 
 
 def _send_archive_request(url: str) -> requests.Response:

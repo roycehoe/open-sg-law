@@ -42,7 +42,7 @@ _SSO_FREE_TABLE_NAMES = ("bill", "bill_report", "source")
 
 
 class _LogRecorder:
-    def __init__(self) -> None:
+    def __init__(self):
         self.messages: list[str] = []
 
     def info(self, message: str) -> None:

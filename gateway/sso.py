@@ -11,19 +11,10 @@ from gateway.http import (
 )
 from schemas.source_http_response import SourceHttpResponse
 from settings import settings
+from utils.sso_listing import build_sso_listing_url
 
 _ROBOTS_PATH = "/robots.txt"
-_FIRST_LISTING_PATH = "/Browse/Act/Current/All?PageSize=500"
-_LATER_LISTING_PATH = (
-    "/Browse/Act/Current/All/{page_index}?PageSize=500&SortBy=Title&SortOrder=ASC"
-)
 _REQUEST_TIMEOUT_SECONDS = 60
-
-
-def build_sso_listing_url(page_index: int) -> str:
-    if page_index == 0:
-        return f"{settings.sso_base_url}{_FIRST_LISTING_PATH}"
-    return f"{settings.sso_base_url}{_LATER_LISTING_PATH.format(page_index=page_index)}"
 
 
 def _get_response(

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from exceptions import OpenSgLawPdfTextError
-from utils.pdf_text import PdfLine, PdfPage, _is_bold_font, get_pdf_pages
+from utils.pdf_text import PdfLine, PdfPage, get_pdf_pages, is_bold_font
 
 _FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
 _INTERPRETATION_ACT_PAGE_COUNT = 2
@@ -114,12 +114,12 @@ def test_a_repealed_section_line_has_a_bold_number_in_the_advtt_font() -> None:
 
 @pytest.mark.parametrize("font_name", _BOLD_FONT_NAMES)
 def test_a_bold_font_name_is_bold(font_name: str) -> None:
-    assert _is_bold_font(font_name)
+    assert is_bold_font(font_name)
 
 
 @pytest.mark.parametrize("font_name", _NOT_BOLD_FONT_NAMES)
 def test_a_font_name_that_is_not_bold_is_not_bold(font_name: str) -> None:
-    assert not _is_bold_font(font_name)
+    assert not is_bold_font(font_name)
 
 
 def test_a_body_that_is_not_a_pdf_raises() -> None:

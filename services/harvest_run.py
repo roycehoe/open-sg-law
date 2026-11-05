@@ -5,7 +5,7 @@ from exceptions import OpenSgLawHarvestHaltError, OpenSgLawHarvestRunError
 
 _STALE_RUN_HOURS = 12
 _MAX_CONSECUTIVE_FAILURES = 3
-_MAX_DATABASE_BYTES = 10 * 1024**3
+_MAX_DATABASE_BYTES = 10 * 1_024**3
 
 
 def get_stale_run_cutoff(now: datetime) -> datetime:

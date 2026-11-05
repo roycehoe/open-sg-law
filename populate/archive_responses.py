@@ -19,11 +19,9 @@ from exceptions import (
     OpenSgLawListingParseError,
 )
 from gateway.internet_archive import (
-    build_archive_capture_url,
     get_archive_capture_response,
     get_archive_cdx_response,
 )
-from gateway.sso import build_sso_listing_url
 from logs import logger
 from schemas.source_http_response import SourceHttpResponse
 from services.archive_capture import get_cdx_captures, get_latest_act_captures
@@ -33,8 +31,15 @@ from services.harvest_run import (
     validate_can_start_harvest_run,
     validate_can_store_at_database_size,
 )
-from services.source_response import build_source_response, get_body_text
-from utils.sso_listing import SsoListingPage, get_sso_listing_page
+from services.source_response import (
+    build_source_response,
+    get_body_text,
+    get_sso_listing_page_of_response,
+)
+from utils.archive_capture_url import build_archive_capture_url
+from utils.sso_listing import (
+    build_sso_listing_url,
+)
 
 _ACT_URL_PREFIX = "sso.agc.gov.sg/Act"
 _PDF_MIME_TYPE = "application/pdf"
@@ -170,18 +175,9 @@ def _is_pdf(source_http_response: SourceHttpResponse) -> bool:
     return source_http_response.body.startswith(_PDF_SIGNATURE)
 
 
-def _get_listing_page(source_http_response: SourceHttpResponse) -> SsoListingPage:
-    listing_text = get_body_text(
-        source_http_response.body, source_http_response.content_type
-    )
-    if listing_text is None:
-        raise OpenSgLawListingParseError("The listing page is not text")
-    return get_sso_listing_page(listing_text)
-
-
 def _is_listing_page(source_http_response: SourceHttpResponse) -> bool:
     try:
-        _get_listing_page(source_http_response)
+        get_sso_listing_page_of_response(source_http_response)
     except OpenSgLawListingParseError:
         return False
     return True
@@ -209,7 +205,9 @@ def _fetch_listing_captures(
     )
     if first_listing_response is None:
         return
-    for page_index in range(1, _get_listing_page(first_listing_response).page_count):
+    for page_index in range(
+        1, get_sso_listing_page_of_response(first_listing_response).page_count
+    ):
         _fetch_archive_response(
             session,
             harvest_run,

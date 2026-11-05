@@ -3,7 +3,9 @@ from typing import Optional
 
 from database.source_response import SourceResponse
 from enums import ResponseKind, SourceName
+from exceptions import OpenSgLawListingParseError
 from schemas.source_http_response import SourceHttpResponse
+from utils.sso_listing import SsoListingPage, get_sso_listing_page
 
 _PDF_SIGNATURE = b"%PDF-"
 _PDF_CONTENT_TYPE = "application/pdf"
@@ -42,6 +44,17 @@ def get_body_text(body: bytes, content_type: Optional[str]) -> Optional[str]:
     if _NUL in text:
         return None
     return text
+
+
+def get_sso_listing_page_of_response(
+    source_http_response: SourceHttpResponse,
+) -> SsoListingPage:
+    listing_text = get_body_text(
+        source_http_response.body, source_http_response.content_type
+    )
+    if listing_text is None:
+        raise OpenSgLawListingParseError("The listing page is not text")
+    return get_sso_listing_page(listing_text)
 
 
 def build_source_response(

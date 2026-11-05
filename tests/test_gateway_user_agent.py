@@ -19,11 +19,11 @@ from gateway.internet_archive import (
     get_archive_cdx_response,
 )
 from gateway.sso import (
-    build_sso_listing_url,
     get_sso_document_response,
     get_sso_listing_response,
     get_sso_robots_response,
 )
+from utils.sso_listing import build_sso_listing_url
 
 _HTTP_OK = 200
 _HTTP_SERVER_ERROR = 500

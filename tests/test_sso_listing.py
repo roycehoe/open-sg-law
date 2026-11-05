@@ -3,9 +3,9 @@ from pathlib import Path
 import pytest
 
 from exceptions import OpenSgLawListingParseError
-from gateway.sso import build_sso_listing_url
 from utils.sso_listing import (
     SsoListingRow,
+    build_sso_listing_url,
     get_sso_listing_page,
     get_sso_listing_page_index,
 )

@@ -21,7 +21,7 @@ _CODE_COUNT = 6
 
 
 class _LogRecorder:
-    def __init__(self) -> None:
+    def __init__(self):
         self.messages: list[str] = []
 
     def info(self, message: str) -> None:

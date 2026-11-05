@@ -25,7 +25,7 @@ _CLEAR_REASON = "AGC replied on 4 November 2026"
 
 
 class _LogRecorder:
-    def __init__(self) -> None:
+    def __init__(self):
         self.messages: list[str] = []
 
     def info(self, message: str) -> None:
@@ -33,7 +33,7 @@ class _LogRecorder:
 
 
 class _SessionRecorder:
-    def __init__(self) -> None:
+    def __init__(self):
         self.opened_count = 0
 
     def __call__(self, *args: object) -> None:

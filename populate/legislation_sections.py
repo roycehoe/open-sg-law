@@ -11,13 +11,6 @@ from utils.pdf_text import get_pdf_pages
 
 
 @dataclass(frozen=True)
-class UnparsedVersion:
-    legislation_version_id: int
-    sso_code: str
-    reason: str
-
-
-@dataclass(frozen=True)
 class VersionSections:
     legislation_version_id: int
     parsed_legislation: ParsedLegislation
@@ -73,7 +66,7 @@ def get_version_sections(
     session: Session, version_document_row: VersionDocumentRow
 ) -> VersionSections:
     pdf_pages = get_pdf_pages(
-        CRUDSourceResponse(session).get_body_bytes_by_id(
+        CRUDSourceResponse(session).get_body_bytes_by_id_and_body_bytes_not_null(
             version_document_row.source_response_id
         )
     )

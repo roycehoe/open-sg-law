@@ -19,7 +19,7 @@ from tests.source_seed import seed_sources
 
 _RECENT_RUN_AGE = timedelta(hours=1)
 _STALE_RUN_AGE = timedelta(hours=13)
-_DATABASE_HALT_BYTES = 10 * 1024**3
+_DATABASE_HALT_BYTES = 10 * 1_024**3
 
 
 def _add_harvest_run(

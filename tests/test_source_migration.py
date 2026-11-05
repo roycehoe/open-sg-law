@@ -12,13 +12,13 @@ _MIGRATION_MODULE_NAME = "migration_0002_add_source"
 
 
 def _get_source_rows() -> tuple[dict[str, Optional[str]], ...]:
-    spec = importlib.util.spec_from_file_location(
+    module_spec = importlib.util.spec_from_file_location(
         _MIGRATION_MODULE_NAME, _MIGRATION_PATH
     )
-    assert spec is not None
-    assert spec.loader is not None
-    migration = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(migration)
+    assert module_spec is not None
+    assert module_spec.loader is not None
+    migration = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(migration)
     return migration.SOURCE_ROWS
 
 

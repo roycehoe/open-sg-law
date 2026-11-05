@@ -36,17 +36,17 @@ def get_cdx_captures(cdx_answer_text: str) -> list[CdxCapture]:
         ) from error
     if not cdx_answer.root:
         return []
-    header, *rows = cdx_answer.root
+    header, *cdx_rows = cdx_answer.root
     original_index = _get_field_index(header, _ORIGINAL_FIELD)
     timestamp_index = _get_field_index(header, _TIMESTAMP_FIELD)
     digest_index = _get_field_index(header, _DIGEST_FIELD)
     return [
         CdxCapture(
-            original_url=row[original_index],
-            timestamp=row[timestamp_index],
-            digest=row[digest_index],
+            original_url=cdx_row[original_index],
+            timestamp=cdx_row[timestamp_index],
+            digest=cdx_row[digest_index],
         )
-        for row in rows
+        for cdx_row in cdx_rows
     ]
 
 

@@ -152,7 +152,7 @@ open-sg-law/
 │   ├── sso_answer.py                # Judges an SSO answer: expected, failure, or a challenge that raises
 │   ├── sso_request.py               # The SSO window check and the Act PDF paths to fetch
 │   ├── harvest_run.py               # Harvest guards: one running run, consecutive failures, database size
-│   ├── source_response.py           # Decodes a body as text unless it is a PDF, and builds a source_response row
+│   ├── source_response.py           # Decodes a body as text unless it is a PDF, reads a listing page from an answer, and builds a source_response row
 │   ├── archive_capture.py           # CDX answer → the latest plain capture of each Act
 │   ├── legislation.py               # Stored listing pages → planned legislation rows
 │   ├── hansard_links.py             # Act-links plan + report export → the Hansard link plan
@@ -202,7 +202,8 @@ open-sg-law/
 ├── utils/                           # Shared pure functions
 │   ├── write_target.py              # validate_can_write: refuses a local database off port 5436
 │   ├── sso_act_url.py               # Reads an SSO Act PDF URL: its code and version stamp, or None for a dated copy
-│   ├── sso_listing.py               # Parses an SSO listing page into rows and its page index
+│   ├── sso_listing.py               # Builds an SSO listing page URL, and parses a listing page into rows and its page index
+│   ├── archive_capture_url.py       # Builds the Internet Archive URL of a capture
 │   ├── openhansard_url.py           # Builds an openhansard.sg report URL as the site does
 │   ├── pdf_text.py                  # PDF → lines with bold and margin marks, and images per page
 │   ├── legislation_update.py        # LegislationUpdate: one legislation row's change, for a bulk update

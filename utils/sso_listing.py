@@ -5,12 +5,23 @@ from typing import Optional
 from bs4 import BeautifulSoup, Tag
 
 from exceptions import OpenSgLawListingParseError
+from settings import settings
 from utils.sso_act_url import get_sso_act_pdf
 
 _PAGE_COUNT_PATTERN = re.compile(r"([\d,]+) results? in (\d+) pages?")
 _ACT_TITLE_PATH_PATTERN = re.compile(r"^/Act/[^/?#]+$")
 _TITLE_LINK_CLASS = "non-ajax"
 _LATER_PAGE_PATTERN = re.compile(r"/Browse/Act/Current/All/(\d+)\?")
+_FIRST_LISTING_PATH = "/Browse/Act/Current/All?PageSize=500"
+_LATER_LISTING_PATH = (
+    "/Browse/Act/Current/All/{page_index}?PageSize=500&SortBy=Title&SortOrder=ASC"
+)
+
+
+def build_sso_listing_url(page_index: int) -> str:
+    if page_index == 0:
+        return f"{settings.sso_base_url}{_FIRST_LISTING_PATH}"
+    return f"{settings.sso_base_url}{_LATER_LISTING_PATH.format(page_index=page_index)}"
 
 
 @dataclass(frozen=True)

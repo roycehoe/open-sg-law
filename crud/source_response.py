@@ -121,7 +121,9 @@ class CRUDSourceResponse:
             for row in self.session.exec(statement).all()
         ]
 
-    def get_body_bytes_by_id(self, source_response_id: int) -> bytes:
+    def get_body_bytes_by_id_and_body_bytes_not_null(
+        self, source_response_id: int
+    ) -> bytes:
         statement = (
             select(SourceResponse.body_bytes)
             .where(col(SourceResponse.id) == source_response_id)
@@ -129,7 +131,7 @@ class CRUDSourceResponse:
         )
         return cast(bytes, self.session.exec(statement).one())
 
-    def get_body_texts_by_source_and_kind_and_status_code(
+    def get_body_texts_by_source_and_kind_and_status_code_and_body_text_not_null(
         self, source: SourceName, kind: ResponseKind, status_code: int
     ) -> list[str]:
         statement = (

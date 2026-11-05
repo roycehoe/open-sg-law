@@ -54,7 +54,7 @@ def _get_capture_digests(session: Session) -> CaptureDigests:
     skipped_cdx_answer_count = 0
     for cdx_answer_text in CRUDSourceResponse(
         session
-    ).get_body_texts_by_source_and_kind_and_status_code(
+    ).get_body_texts_by_source_and_kind_and_status_code_and_body_text_not_null(
         SourceName.INTERNET_ARCHIVE, ResponseKind.CDX_ANSWER, _HTTP_OK
     ):
         try:
@@ -91,7 +91,9 @@ def _build_legislation_version(
     capture_to_digest: dict[tuple[str, str], str],
 ) -> LegislationVersion:
     pdf_pages = get_pdf_pages(
-        CRUDSourceResponse(session).get_body_bytes_by_id(document_row.id)
+        CRUDSourceResponse(session).get_body_bytes_by_id_and_body_bytes_not_null(
+            document_row.id
+        )
     )
     printed_version_date = get_printed_version_date(pdf_pages)
     return LegislationVersion(

@@ -8,10 +8,10 @@ from crud.harvest_run import CRUDHarvestRun
 from crud.source_response import CRUDSourceResponse, ListingPageRow
 from database.harvest_run import HarvestRun
 from enums import HarvestRunStatus, ResponseKind, SourceName
-from gateway.internet_archive import build_archive_capture_url
-from gateway.sso import build_sso_listing_url
 from schemas.source_http_response import SourceHttpResponse
 from services.source_response import build_source_response
+from utils.archive_capture_url import build_archive_capture_url
+from utils.sso_listing import build_sso_listing_url
 
 LISTING_CONTENT_TYPE = "text/html; charset=utf-8"
 _FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures" / "sso_listing"

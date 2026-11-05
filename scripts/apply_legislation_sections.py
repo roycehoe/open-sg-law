@@ -1,5 +1,6 @@
 import argparse
 from collections import Counter
+from dataclasses import dataclass
 
 from sqlmodel import Session
 
@@ -17,7 +18,6 @@ from exceptions import (
 )
 from logs import logger
 from populate.legislation_sections import (
-    UnparsedVersion,
     VersionSections,
     get_version_sections,
     write_version_sections,
@@ -28,8 +28,15 @@ from settings import settings
 from utils.write_target import validate_can_write
 
 
+@dataclass(frozen=True)
+class _UnparsedVersion:
+    legislation_version_id: int
+    sso_code: str
+    reason: str
+
+
 class _SectionFigures:
-    def __init__(self) -> None:
+    def __init__(self):
         self.kind_to_section_count: Counter[LegislationSectionKind] = Counter()
         self.repealed_section_count: int = 0
         self.image_page_section_count: int = 0
@@ -47,8 +54,8 @@ class _SectionFigures:
 
 def _build_unparsed_version(
     version_document_row: VersionDocumentRow, error: OpenSgLawError
-) -> UnparsedVersion:
-    return UnparsedVersion(
+) -> _UnparsedVersion:
+    return _UnparsedVersion(
         legislation_version_id=version_document_row.id,
         sso_code=version_document_row.sso_code,
         reason=str(error),
@@ -73,7 +80,7 @@ def _log_figures(
     parsed_version_count: int,
     changed_version_count: int,
     section_figures: _SectionFigures,
-    unparsed_versions: list[UnparsedVersion],
+    unparsed_versions: list[_UnparsedVersion],
 ) -> None:
     logger.info(f"{version_count:,} versions read")
     logger.info(f"{parsed_version_count:,} versions parsed")
@@ -101,7 +108,7 @@ def apply_legislation_sections(is_commit: bool) -> None:
     if is_commit:
         validate_can_write(settings.database_url)
     section_figures = _SectionFigures()
-    unparsed_versions: list[UnparsedVersion] = []
+    unparsed_versions: list[_UnparsedVersion] = []
     parsed_version_count = 0
     changed_version_count = 0
     with Session(engine) as session:

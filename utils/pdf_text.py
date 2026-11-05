@@ -33,18 +33,18 @@ class PdfPage:
     image_count: int
 
 
-def _is_bold_font(font_name: str) -> bool:
+def is_bold_font(font_name: str) -> bool:
     return (
         _BOLD_FONT_PATTERN.search(_SUBSET_PREFIX_PATTERN.sub("", font_name)) is not None
     )
 
 
-def _get_bold_prefix(text: str, chars: list[dict[str, object]]) -> str:
+def _get_bold_prefix(text: str, characters: list[dict[str, object]]) -> str:
     bold_character_count = 0
-    for char in chars:
-        if not _is_bold_font(str(char["fontname"])):
+    for character in characters:
+        if not is_bold_font(str(character["fontname"])):
             break
-        bold_character_count += len(str(char["text"]))
+        bold_character_count += len(str(character["text"]))
 
     printed_character_count = 0
     for index, text_character in enumerate(text):
@@ -58,16 +58,18 @@ def _get_bold_prefix(text: str, chars: list[dict[str, object]]) -> str:
 def _build_pdf_line(text_line: dict[str, object]) -> PdfLine:
     text = str(text_line["text"])
     top = float(str(text_line["top"]))
-    chars = [
-        char
-        for char in cast(list[dict[str, object]], text_line["chars"])
-        if not str(char["text"]).isspace()
+    characters = [
+        character
+        for character in cast(list[dict[str, object]], text_line["chars"])
+        if not str(character["text"]).isspace()
     ]
     return PdfLine(
         text=text,
-        bold_prefix=_get_bold_prefix(text, chars),
+        bold_prefix=_get_bold_prefix(text, characters),
         top=top,
-        is_bold=all(_is_bold_font(str(char["fontname"])) for char in chars),
+        is_bold=all(
+            is_bold_font(str(character["fontname"])) for character in characters
+        ),
         is_margin=top < _HEADER_BOTTOM_POINTS
         or top > _FOOTER_TOP_POINTS
         or (top > _PAGE_NUMBER_TOP_POINTS and text.isdigit()),

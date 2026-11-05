@@ -19,16 +19,16 @@ from exceptions import (
     OpenSgLawHarvestHaltError,
     OpenSgLawHarvestRunError,
 )
-from gateway.internet_archive import build_archive_capture_url
-from gateway.sso import build_sso_listing_url
 from populate.archive_responses import populate_archive_responses
 from schemas.source_http_response import SourceHttpResponse
 from services.source_response import build_source_response
 from tests.source_seed import seed_sources
+from utils.archive_capture_url import build_archive_capture_url
+from utils.sso_listing import build_sso_listing_url
 
 _RUN_TIME = datetime(2026, 11, 6, 19, 0, tzinfo=timezone.utc)
 _CAPTURE_TIMESTAMP_FORMAT = "%Y%m%d%H%M%S"
-_DATABASE_HALT_BYTES = 10 * 1024**3
+_DATABASE_HALT_BYTES = 10 * 1_024**3
 _FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures"
 _FIRST_LISTING_BODY = (
     _FIXTURES_DIRECTORY / "sso_listing" / "browse-all-p1-20240716-trimmed.html"

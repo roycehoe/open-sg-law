@@ -1,8 +1,6 @@
 import pytest
 from sqlmodel import Session, col, select
 
-from crud.act_history_entry import CRUDActHistoryEntry
-from crud.bill import CRUDBill
 from crud.bill_report import CRUDBillReport
 from database.act_history_entry import ActHistoryEntry
 from database.bill import Bill
@@ -12,13 +10,25 @@ from schemas.hansard_link_plan import HansardLinkPlan
 from tests.hansard_link_seed import (
     ACT_LINK_PLAN_SHA256,
     REPORT_EXPORT_SHA256,
+    StoredLinkCounts,
     build_act_link_plan,
     build_report_export,
+    get_stored_link_counts,
     seed_legislation,
 )
 
-_FULL_COUNTS = (2, 3, 3, 2)
-_CHANGED_COUNTS = (1, 2, 2, 1)
+_FULL_COUNTS = StoredLinkCounts(
+    bill_count=2,
+    bill_report_count=3,
+    history_entry_count=3,
+    linked_history_entry_count=2,
+)
+_CHANGED_COUNTS = StoredLinkCounts(
+    bill_count=1,
+    bill_report_count=2,
+    history_entry_count=2,
+    linked_history_entry_count=1,
+)
 
 
 def _get_plan(session: Session) -> HansardLinkPlan:
@@ -41,16 +51,6 @@ def _get_changed_plan(hansard_link_plan: HansardLinkPlan) -> HansardLinkPlan:
     )
 
 
-def _get_stored_counts(session: Session) -> tuple[int, int, int, int]:
-    session.expire_all()
-    return (
-        CRUDBill(session).get_count(),
-        CRUDBillReport(session).get_count(),
-        CRUDActHistoryEntry(session).get_count(),
-        CRUDActHistoryEntry(session).get_count_by_bill_id_not_null(),
-    )
-
-
 def _get_bill_ids(session: Session) -> list[int]:
     statement = select(Bill.id).order_by(col(Bill.id))
     return [bill_id for bill_id in session.exec(statement).all() if bill_id is not None]
@@ -61,8 +61,8 @@ def test_the_plan_reads_the_stored_sso_codes(scratch_session: Session) -> None:
 
     hansard_link_plan = _get_plan(scratch_session)
 
-    assert len(hansard_link_plan.bills) == _FULL_COUNTS[0]
-    assert len(hansard_link_plan.entries) == _FULL_COUNTS[2]
+    assert len(hansard_link_plan.bills) == _FULL_COUNTS.bill_count
+    assert len(hansard_link_plan.entries) == _FULL_COUNTS.history_entry_count
 
 
 def test_writing_a_plan_stores_its_rows_with_the_links(
@@ -73,7 +73,7 @@ def test_writing_a_plan_stores_its_rows_with_the_links(
     write_hansard_link_plan(scratch_session, _get_plan(scratch_session))
     scratch_session.commit()
 
-    assert _get_stored_counts(scratch_session) == _FULL_COUNTS
+    assert get_stored_link_counts(scratch_session) == _FULL_COUNTS
     entries = scratch_session.exec(
         select(ActHistoryEntry).order_by(
             col(ActHistoryEntry.legislation_id), col(ActHistoryEntry.ordinal)
@@ -95,7 +95,7 @@ def test_writing_a_changed_plan_replaces_every_row(scratch_session: Session) -> 
     write_hansard_link_plan(scratch_session, _get_changed_plan(hansard_link_plan))
     scratch_session.commit()
 
-    assert _get_stored_counts(scratch_session) == _CHANGED_COUNTS
+    assert get_stored_link_counts(scratch_session) == _CHANGED_COUNTS
     assert set(_get_bill_ids(scratch_session)).isdisjoint(earlier_bill_ids)
 
 
@@ -116,4 +116,4 @@ def test_a_failure_after_the_delete_leaves_the_earlier_rows_after_a_rollback(
         write_hansard_link_plan(scratch_session, _get_changed_plan(hansard_link_plan))
     scratch_session.rollback()
 
-    assert _get_stored_counts(scratch_session) == _FULL_COUNTS
+    assert get_stored_link_counts(scratch_session) == _FULL_COUNTS

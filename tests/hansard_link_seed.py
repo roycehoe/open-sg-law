@@ -1,8 +1,12 @@
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional
 
 from sqlmodel import Session
 
+from crud.act_history_entry import CRUDActHistoryEntry
+from crud.bill import CRUDBill
+from crud.bill_report import CRUDBillReport
 from crud.legislation import CRUDLegislation
 from database.legislation import Legislation
 from enums import ActHistoryEntryKind, BillLinkSource, SourceName
@@ -18,6 +22,26 @@ from tests.source_seed import seed_sources
 ACT_LINK_PLAN_SHA256 = "a" * 64
 REPORT_EXPORT_SHA256 = "b" * 64
 STORED_SSO_CODES = frozenset({"EDA2025", "WA2026"})
+
+
+@dataclass(frozen=True)
+class StoredLinkCounts:
+    bill_count: int
+    bill_report_count: int
+    history_entry_count: int
+    linked_history_entry_count: int
+
+
+def get_stored_link_counts(session: Session) -> StoredLinkCounts:
+    session.expire_all()
+    return StoredLinkCounts(
+        bill_count=CRUDBill(session).get_count(),
+        bill_report_count=CRUDBillReport(session).get_count(),
+        history_entry_count=CRUDActHistoryEntry(session).get_count(),
+        linked_history_entry_count=CRUDActHistoryEntry(
+            session
+        ).get_count_by_bill_id_not_null(),
+    )
 
 
 def build_entry(

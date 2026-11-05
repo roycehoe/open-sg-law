@@ -23,7 +23,6 @@ from exceptions import (
     OpenSgLawGatewayError,
     OpenSgLawHarvestHaltError,
     OpenSgLawHarvestRunError,
-    OpenSgLawListingParseError,
     OpenSgLawSourceRowError,
     OpenSgLawSsoChallengeError,
     OpenSgLawSsoWindowError,
@@ -41,7 +40,10 @@ from services.harvest_run import (
     validate_can_start_harvest_run,
     validate_can_store_at_database_size,
 )
-from services.source_response import build_source_response, get_body_text
+from services.source_response import (
+    build_source_response,
+    get_sso_listing_page_of_response,
+)
 from services.sso_answer import (
     get_sso_answer,
     is_sso_listing_page,
@@ -52,7 +54,6 @@ from services.sso_request import (
     get_act_pdf_paths_to_fetch,
     validate_can_send_sso_request,
 )
-from utils.sso_listing import SsoListingPage, get_sso_listing_page
 
 _HTTP_OK = 200
 _FIRST_EXPECTED_ANSWER_REASON = "First expected answer"
@@ -156,15 +157,6 @@ def _send_sso_request(
     return source_http_response
 
 
-def _get_listing_page(source_http_response: SourceHttpResponse) -> SsoListingPage:
-    listing_text = get_body_text(
-        source_http_response.body, source_http_response.content_type
-    )
-    if listing_text is None:
-        raise OpenSgLawListingParseError("The listing page is not text")
-    return get_sso_listing_page(listing_text)
-
-
 def _send_night_requests(
     session: Session,
     harvest_run: HarvestRun,
@@ -200,7 +192,7 @@ def _send_night_requests(
     )
     if first_listing_response is None:
         return
-    first_listing_page = _get_listing_page(first_listing_response)
+    first_listing_page = get_sso_listing_page_of_response(first_listing_response)
     listing_rows = list(first_listing_page.rows)
     for page_index in range(1, first_listing_page.page_count):
         listing_response = _send_sso_request(
@@ -216,7 +208,7 @@ def _send_night_requests(
         )
         if listing_response is None:
             continue
-        listing_rows.extend(_get_listing_page(listing_response).rows)
+        listing_rows.extend(get_sso_listing_page_of_response(listing_response).rows)
     stored_document_urls = [
         *CRUDSourceResponse(
             session

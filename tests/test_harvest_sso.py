@@ -20,7 +20,7 @@ _STARTED_AT = datetime(2026, 11, 5, 19, 0, tzinfo=timezone.utc)
 
 
 class _LogRecorder:
-    def __init__(self) -> None:
+    def __init__(self):
         self.messages: list[str] = []
 
     def info(self, message: str) -> None:
@@ -28,7 +28,7 @@ class _LogRecorder:
 
 
 class _CallRecorder:
-    def __init__(self) -> None:
+    def __init__(self):
         self.call_count = 0
 
     def __call__(self, *args: object) -> None:

@@ -8,7 +8,6 @@ from crud.legislation import CRUDLegislation
 from crud.source_response import ListingPageRow
 from enums import SourceName
 from exceptions import OpenSgLawListingParseError
-from gateway.sso import build_sso_listing_url
 from populate.legislation import get_legislation_write, write_legislation
 from services.legislation import (
     Listing,
@@ -25,7 +24,7 @@ from tests.listing_seed import (
     seed_listing,
 )
 from tests.source_seed import seed_sources
-from utils.sso_listing import SsoListingRow, get_sso_listing_page
+from utils.sso_listing import SsoListingRow, build_sso_listing_url, get_sso_listing_page
 
 _FIRST_PAGE_ROWS = get_sso_listing_page(FIRST_PAGE_BODY.decode("utf-8")).rows
 _SECOND_PAGE_ROWS = get_sso_listing_page(SECOND_PAGE_BODY.decode("utf-8")).rows
