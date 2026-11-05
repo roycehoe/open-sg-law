@@ -32,6 +32,7 @@ os.environ["DATABASE_URL"] = _SCRATCH_DATABASE_URL
 
 # NOTE: settings is imported below the assignment so it reads the scratch URL and never a .env URL
 import database.harvest_run  # noqa: F401 registers the table for create_all
+import database.legislation  # noqa: F401 registers the table for create_all
 import database.source  # noqa: F401 registers the table for create_all
 import database.source_response  # noqa: F401 registers the table for create_all
 from settings import settings

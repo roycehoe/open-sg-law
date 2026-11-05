@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlmodel import SQLModel
 
 import database.harvest_run  # noqa: F401
+import database.legislation  # noqa: F401
 import database.source  # noqa: F401
 import database.source_response  # noqa: F401
 from alembic import context
