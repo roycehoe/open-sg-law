@@ -19,3 +19,10 @@ class SsoAccessState(StrEnum):
     UNTESTED = "UNTESTED"
     SERVING = "SERVING"
     CHALLENGED = "CHALLENGED"
+
+
+class HarvestRunStatus(StrEnum):
+    RUNNING = "RUNNING"
+    SUCCEEDED = "SUCCEEDED"
+    HALTED = "HALTED"
+    FAILED = "FAILED"

@@ -6,6 +6,7 @@ import sqlmodel.sql.sqltypes
 from sqlalchemy import create_engine
 from sqlmodel import SQLModel
 
+import database.harvest_run  # noqa: F401
 import database.source  # noqa: F401
 from alembic import context
 from alembic.runtime.migration import MigrationContext
