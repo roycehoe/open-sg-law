@@ -49,6 +49,15 @@ def test_the_running_header_and_footer_are_margin_lines() -> None:
     assert not _get_line(pdf_page, "PART 1").is_margin
 
 
+def test_the_page_number_printed_just_above_the_footer_is_a_margin_line() -> None:
+    pdf_page = _get_pages("AA1906-p3-4.pdf")[0]
+
+    page_number_line = next(line for line in pdf_page.lines if line.text == "1")
+
+    assert page_number_line.is_margin
+    assert not _get_line(pdf_page, "[4/2021]").is_margin
+
+
 def test_a_heading_line_is_bold() -> None:
     pdf_page = _get_pages("IA1965-p5-6.pdf")[0]
 

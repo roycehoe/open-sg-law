@@ -13,6 +13,7 @@ _SUBSET_PREFIX_PATTERN = re.compile(r"^[A-Z]{6}\+")
 _BOLD_FONT_PATTERN = re.compile(r"Bold|^AdvTT[0-9a-f]+\.BI?(\+[0-9a-f]+)?$")
 _HEADER_BOTTOM_POINTS = 66
 _FOOTER_TOP_POINTS = 650
+_PAGE_NUMBER_TOP_POINTS = 638.8
 _X_TOLERANCE_POINTS = 1.5
 
 
@@ -67,7 +68,9 @@ def _build_pdf_line(text_line: dict[str, object]) -> PdfLine:
         bold_prefix=_get_bold_prefix(text, chars),
         top=top,
         is_bold=all(_is_bold_font(str(char["fontname"])) for char in chars),
-        is_margin=top < _HEADER_BOTTOM_POINTS or top > _FOOTER_TOP_POINTS,
+        is_margin=top < _HEADER_BOTTOM_POINTS
+        or top > _FOOTER_TOP_POINTS
+        or (top > _PAGE_NUMBER_TOP_POINTS and text.isdigit()),
     )
 
 
