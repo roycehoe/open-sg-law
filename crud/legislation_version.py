@@ -2,11 +2,12 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import update
+from sqlalchemy import Integer, cast, extract, update
 from sqlmodel import Session, col, func, select
 
 from database.legislation import Legislation
 from database.legislation_version import LegislationVersion
+from enums import SourceName
 from utils.legislation_version_update import LegislationVersionNewestUpdate
 
 
@@ -27,6 +28,25 @@ class VersionDocumentRow:
     source_response_id: int
 
 
+@dataclass(frozen=True)
+class SourceCountRow:
+    source: SourceName
+    legislation_count: int
+
+
+@dataclass(frozen=True)
+class VersionYearCountRow:
+    version_year: Optional[int]
+    version_count: int
+
+
+@dataclass(frozen=True)
+class CharacterCountRow:
+    sso_code: str
+    body_character_count: int
+    section_character_count: int
+
+
 class CRUDLegislationVersion:
     def __init__(self, session: Session):
         self.session = session
@@ -38,6 +58,61 @@ class CRUDLegislationVersion:
     def get_count(self) -> int:
         statement = select(func.count()).select_from(LegislationVersion)
         return self.session.exec(statement).one()
+
+    def get_count_by_body_character_count_null(self) -> int:
+        statement = (
+            select(func.count())
+            .select_from(LegislationVersion)
+            .where(col(LegislationVersion.body_character_count).is_(None))
+        )
+        return self.session.exec(statement).one()
+
+    def get_legislation_counts_by_source(self) -> list[SourceCountRow]:
+        statement = (
+            select(
+                LegislationVersion.source,
+                func.count(func.distinct(LegislationVersion.legislation_id)),
+            )
+            .group_by(LegislationVersion.source)
+            .order_by(LegislationVersion.source)
+        )
+        return [
+            SourceCountRow(SourceName(source), legislation_count)
+            for source, legislation_count in self.session.exec(statement).all()
+        ]
+
+    def get_version_year_counts_by_is_newest(
+        self, is_newest: bool
+    ) -> list[VersionYearCountRow]:
+        version_year = cast(
+            extract("year", col(LegislationVersion.version_date)), Integer
+        )
+        statement = (
+            select(version_year, func.count())
+            .where(col(LegislationVersion.is_newest).is_(is_newest))
+            .group_by(version_year)
+            .order_by(version_year)
+        )
+        return [VersionYearCountRow(*row) for row in self.session.exec(statement).all()]
+
+    def get_character_count_rows_by_body_character_count_not_null_and_section_character_count_not_null(
+        self,
+    ) -> list[CharacterCountRow]:
+        statement = (
+            select(
+                Legislation.sso_code,
+                LegislationVersion.body_character_count,
+                LegislationVersion.section_character_count,
+            )
+            .join(Legislation, col(Legislation.id) == LegislationVersion.legislation_id)
+            .where(col(LegislationVersion.body_character_count).is_not(None))
+            .where(col(LegislationVersion.section_character_count).is_not(None))
+            .order_by(Legislation.sso_code, col(LegislationVersion.id))
+        )
+        return [
+            CharacterCountRow(*row)  # pyright: ignore[reportArgumentType] the where clauses leave no NULL count
+            for row in self.session.exec(statement).all()
+        ]
 
     def get_rows(self) -> list[LegislationVersionRow]:
         statement = select(  # pyright: ignore[reportCallIssue] sqlmodel types select for at most four columns
@@ -62,7 +137,10 @@ class CRUDLegislationVersion:
             .join(Legislation, col(Legislation.id) == LegislationVersion.legislation_id)
             .order_by(Legislation.sso_code, col(LegislationVersion.id))
         )
-        return [VersionDocumentRow(*row) for row in self.session.exec(statement).all()]
+        return [
+            VersionDocumentRow(*row)  # pyright: ignore[reportArgumentType] a stored row has an id
+            for row in self.session.exec(statement).all()
+        ]
 
     def set_is_newest_bulk(
         self,

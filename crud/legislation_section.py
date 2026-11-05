@@ -23,6 +23,12 @@ class LegislationSectionRow:
     is_on_image_page: bool
 
 
+@dataclass(frozen=True)
+class SectionKindCountRow:
+    kind: LegislationSectionKind
+    section_count: int
+
+
 class CRUDLegislationSection:
     def __init__(self, session: Session):
         self.session = session
@@ -33,6 +39,33 @@ class CRUDLegislationSection:
 
     def get_count(self) -> int:
         statement = select(func.count()).select_from(LegislationSection)
+        return self.session.exec(statement).one()
+
+    def get_counts_by_kind(self) -> list[SectionKindCountRow]:
+        statement = (
+            select(LegislationSection.kind, func.count())
+            .group_by(LegislationSection.kind)
+            .order_by(LegislationSection.kind)
+        )
+        return [
+            SectionKindCountRow(LegislationSectionKind(kind), section_count)
+            for kind, section_count in self.session.exec(statement).all()
+        ]
+
+    def get_count_by_is_repealed(self, is_repealed: bool) -> int:
+        statement = (
+            select(func.count())
+            .select_from(LegislationSection)
+            .where(col(LegislationSection.is_repealed).is_(is_repealed))
+        )
+        return self.session.exec(statement).one()
+
+    def get_count_by_is_on_image_page(self, is_on_image_page: bool) -> int:
+        statement = (
+            select(func.count())
+            .select_from(LegislationSection)
+            .where(col(LegislationSection.is_on_image_page).is_(is_on_image_page))
+        )
         return self.session.exec(statement).one()
 
     def get_count_by_legislation_version_id(self, legislation_version_id: int) -> int:

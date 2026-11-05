@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 
-from sqlalchemy import update
-from sqlmodel import Session, func, select
+from sqlalchemy import exists, update
+from sqlmodel import Session, col, func, select
 
 from database.legislation import Legislation
+from database.legislation_version import LegislationVersion
 from enums import SourceName
 from utils.legislation_update import LegislationUpdate
 
@@ -27,6 +28,18 @@ class CRUDLegislation:
 
     def get_count(self) -> int:
         statement = select(func.count()).select_from(Legislation)
+        return self.session.exec(statement).one()
+
+    def get_count_by_legislation_version_none(self) -> int:
+        statement = (
+            select(func.count())
+            .select_from(Legislation)
+            .where(
+                ~exists().where(
+                    col(LegislationVersion.legislation_id) == col(Legislation.id)
+                )
+            )
+        )
         return self.session.exec(statement).one()
 
     def get_rows(self) -> list[LegislationRow]:
