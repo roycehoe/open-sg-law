@@ -1,5 +1,5 @@
 import pytest
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from crud.act_history_entry import CRUDActHistoryEntry
 from crud.bill import CRUDBill
@@ -52,7 +52,7 @@ def _get_stored_counts(session: Session) -> tuple[int, int, int, int]:
 
 
 def _get_bill_ids(session: Session) -> list[int]:
-    statement = select(Bill.id).order_by(Bill.id)
+    statement = select(Bill.id).order_by(col(Bill.id))
     return [bill_id for bill_id in session.exec(statement).all() if bill_id is not None]
 
 
@@ -76,7 +76,7 @@ def test_writing_a_plan_stores_its_rows_with_the_links(
     assert _get_stored_counts(scratch_session) == _FULL_COUNTS
     entries = scratch_session.exec(
         select(ActHistoryEntry).order_by(
-            ActHistoryEntry.legislation_id, ActHistoryEntry.ordinal
+            col(ActHistoryEntry.legislation_id), col(ActHistoryEntry.ordinal)
         )
     ).all()
     bill_ids = _get_bill_ids(scratch_session)
