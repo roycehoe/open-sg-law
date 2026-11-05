@@ -35,6 +35,7 @@ import database.act_history_entry  # noqa: F401 registers the table for create_a
 import database.bill  # noqa: F401 registers the table for create_all
 import database.harvest_run  # noqa: F401 registers the table for create_all
 import database.legislation  # noqa: F401 registers the table for create_all
+import database.legislation_section  # noqa: F401 registers the table for create_all
 import database.legislation_version  # noqa: F401 registers the table for create_all
 import database.source  # noqa: F401 registers the table for create_all
 import database.source_response  # noqa: F401 registers the table for create_all
