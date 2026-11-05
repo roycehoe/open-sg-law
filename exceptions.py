@@ -64,3 +64,7 @@ class OpenSgLawPdfTextError(OpenSgLawError):
 
 class OpenSgLawSectionParseError(OpenSgLawError):
     pass
+
+
+class OpenSgLawVersionDateError(OpenSgLawError):
+    pass
