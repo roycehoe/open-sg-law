@@ -40,14 +40,19 @@ def get_cdx_captures(cdx_answer_text: str) -> list[CdxCapture]:
     original_index = _get_field_index(header, _ORIGINAL_FIELD)
     timestamp_index = _get_field_index(header, _TIMESTAMP_FIELD)
     digest_index = _get_field_index(header, _DIGEST_FIELD)
-    return [
-        CdxCapture(
-            original_url=cdx_row[original_index],
-            timestamp=cdx_row[timestamp_index],
-            digest=cdx_row[digest_index],
-        )
-        for cdx_row in cdx_rows
-    ]
+    try:
+        return [
+            CdxCapture(
+                original_url=cdx_row[original_index],
+                timestamp=cdx_row[timestamp_index],
+                digest=cdx_row[digest_index],
+            )
+            for cdx_row in cdx_rows
+        ]
+    except IndexError as error:
+        raise OpenSgLawCdxAnswerError(
+            "The CDX answer has a row shorter than its header"
+        ) from error
 
 
 def get_latest_act_captures(cdx_captures: list[CdxCapture]) -> list[CdxCapture]:

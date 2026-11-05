@@ -35,6 +35,9 @@ _AA2001_LATER_TIMESTAMP = "20251231140335"
 _AA2004_PLAIN_TIMESTAMP = "20250115082458"
 _AA2004_VALID_DATE_TIMESTAMP = "20250121122115"
 _ANSWER_WITHOUT_DIGEST_TEXT = '[["original","timestamp"]]'
+_ANSWER_WITH_SHORT_ROW_TEXT = (
+    '[["original","timestamp","digest"],["https://sso.agc.gov.sg/Act/AA2004"]]'
+)
 
 
 def _build_capture(original_url: str, timestamp: str) -> CdxCapture:
@@ -100,3 +103,8 @@ def test_a_later_capture_replaces_an_earlier_one_whatever_the_input_order() -> N
     assert get_latest_act_captures(cdx_captures) == [
         _build_capture(_AA2001_LATER_URL, _AA2001_LATER_TIMESTAMP)
     ]
+
+
+def test_a_row_shorter_than_the_header_is_refused() -> None:
+    with pytest.raises(OpenSgLawCdxAnswerError, match="shorter than its header"):
+        get_cdx_captures(_ANSWER_WITH_SHORT_ROW_TEXT)
