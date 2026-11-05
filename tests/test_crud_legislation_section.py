@@ -4,7 +4,6 @@ from sqlmodel import Session, select
 
 from crud.legislation_section import CRUDLegislationSection, LegislationSectionRow
 from crud.legislation_version import CRUDLegislationVersion
-from database.legislation_section import LegislationSection
 from database.legislation_version import LegislationVersion
 from database.source_response import SourceResponse
 from enums import LegislationSectionKind, SourceName
@@ -15,7 +14,13 @@ from tests.document_seed import (
     seed_document,
     seed_harvest_run,
 )
-from tests.legislation_version_seed import build_version, seed_version_inputs
+from tests.legislation_version_seed import (
+    build_section,
+    build_version,
+    seed_version_inputs,
+)
+
+_SHORT_TITLE_HEADING = "Short title"
 
 
 def _seed_version(session: Session) -> int:
@@ -52,32 +57,25 @@ def _seed_other_version(session: Session) -> int:
     return legislation_version_id
 
 
-def _build_section(
-    legislation_version_id: int, ordinal: int, printed_number: str
-) -> LegislationSection:
-    return LegislationSection(
-        ordinal=ordinal,
-        printed_number=printed_number,
-        heading="Short title",
-        part_heading="PART 1\nPRELIMINARY",
-        text=f"{printed_number}. This Act is the Interpretation Act 1965.",
-        first_page_number=1,
-        last_page_number=2,
-        sso_anchor=f"#pr{printed_number}-",
-        kind=LegislationSectionKind.SECTION,
-        is_repealed=False,
-        is_on_image_page=False,
-        legislation_version_id=legislation_version_id,
-    )
-
-
 def test_sections_are_read_back_in_ordinal_order(scratch_session: Session) -> None:
     legislation_version_id = _seed_version(scratch_session)
 
     CRUDLegislationSection(scratch_session).add_many(
         [
-            _build_section(legislation_version_id, 2, "2"),
-            _build_section(legislation_version_id, 1, "1"),
+            build_section(
+                legislation_version_id,
+                2,
+                "2",
+                _SHORT_TITLE_HEADING,
+                "2. This Act is the Interpretation Act 1965.",
+            ),
+            build_section(
+                legislation_version_id,
+                1,
+                "1",
+                _SHORT_TITLE_HEADING,
+                "1. This Act is the Interpretation Act 1965.",
+            ),
         ]
     )
     legislation_section_rows = CRUDLegislationSection(
@@ -88,7 +86,7 @@ def test_sections_are_read_back_in_ordinal_order(scratch_session: Session) -> No
         LegislationSectionRow(
             ordinal=ordinal,
             printed_number=str(ordinal),
-            heading="Short title",
+            heading=_SHORT_TITLE_HEADING,
             part_heading="PART 1\nPRELIMINARY",
             division_heading=None,
             text=f"{ordinal}. This Act is the Interpretation Act 1965.",
@@ -109,7 +107,15 @@ def test_sections_are_read_back_in_ordinal_order(scratch_session: Session) -> No
 def test_deleting_a_versions_sections_leaves_none(scratch_session: Session) -> None:
     legislation_version_id = _seed_version(scratch_session)
     CRUDLegislationSection(scratch_session).add_many(
-        [_build_section(legislation_version_id, 1, "1")]
+        [
+            build_section(
+                legislation_version_id,
+                1,
+                "1",
+                _SHORT_TITLE_HEADING,
+                "1. This Act is the Interpretation Act 1965.",
+            )
+        ]
     )
 
     CRUDLegislationSection(scratch_session).delete_by_legislation_version_id(
@@ -127,18 +133,40 @@ def test_deleting_a_versions_sections_leaves_none(scratch_session: Session) -> N
 def test_a_second_section_with_one_ordinal_is_refused(scratch_session: Session) -> None:
     legislation_version_id = _seed_version(scratch_session)
     CRUDLegislationSection(scratch_session).add_many(
-        [_build_section(legislation_version_id, 1, "1")]
+        [
+            build_section(
+                legislation_version_id,
+                1,
+                "1",
+                _SHORT_TITLE_HEADING,
+                "1. This Act is the Interpretation Act 1965.",
+            )
+        ]
     )
 
     with pytest.raises(IntegrityError):
         CRUDLegislationSection(scratch_session).add_many(
-            [_build_section(legislation_version_id, 1, "2")]
+            [
+                build_section(
+                    legislation_version_id,
+                    1,
+                    "2",
+                    _SHORT_TITLE_HEADING,
+                    "2. This Act is the Interpretation Act 1965.",
+                )
+            ]
         )
 
 
 def test_a_kind_outside_the_enum_is_refused(scratch_session: Session) -> None:
     legislation_version_id = _seed_version(scratch_session)
-    legislation_section = _build_section(legislation_version_id, 1, "1")
+    legislation_section = build_section(
+        legislation_version_id,
+        1,
+        "1",
+        _SHORT_TITLE_HEADING,
+        "1. This Act is the Interpretation Act 1965.",
+    )
     legislation_section.kind = "CLAUSE"  # pyright: ignore[reportAttributeAccessIssue] the test stores a value outside the enum to reach the check constraint
 
     with pytest.raises(IntegrityError):
@@ -150,12 +178,28 @@ def test_a_second_section_with_one_printed_number_is_refused(
 ) -> None:
     legislation_version_id = _seed_version(scratch_session)
     CRUDLegislationSection(scratch_session).add_many(
-        [_build_section(legislation_version_id, 1, "9A")]
+        [
+            build_section(
+                legislation_version_id,
+                1,
+                "9A",
+                _SHORT_TITLE_HEADING,
+                "9A. This Act is the Interpretation Act 1965.",
+            )
+        ]
     )
 
     with pytest.raises(IntegrityError):
         CRUDLegislationSection(scratch_session).add_many(
-            [_build_section(legislation_version_id, 2, "9A")]
+            [
+                build_section(
+                    legislation_version_id,
+                    2,
+                    "9A",
+                    _SHORT_TITLE_HEADING,
+                    "9A. This Act is the Interpretation Act 1965.",
+                )
+            ]
         )
 
 
@@ -165,8 +209,20 @@ def test_one_printed_number_is_kept_in_two_versions(scratch_session: Session) ->
 
     CRUDLegislationSection(scratch_session).add_many(
         [
-            _build_section(legislation_version_id, 1, "9A"),
-            _build_section(other_legislation_version_id, 1, "9A"),
+            build_section(
+                legislation_version_id,
+                1,
+                "9A",
+                _SHORT_TITLE_HEADING,
+                "9A. This Act is the Interpretation Act 1965.",
+            ),
+            build_section(
+                other_legislation_version_id,
+                1,
+                "9A",
+                _SHORT_TITLE_HEADING,
+                "9A. This Act is the Interpretation Act 1965.",
+            ),
         ]
     )
 

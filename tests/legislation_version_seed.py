@@ -7,9 +7,10 @@ from crud.legislation import CRUDLegislation
 from crud.source_response import CRUDSourceResponse
 from database.harvest_run import HarvestRun
 from database.legislation import Legislation
+from database.legislation_section import LegislationSection
 from database.legislation_version import LegislationVersion
 from database.source_response import SourceResponse
-from enums import ResponseKind, SourceName
+from enums import LegislationSectionKind, ResponseKind, SourceName
 from tests.source_seed import seed_sources
 
 CAPTURED_AT = datetime(2026, 11, 5, 9, 0, tzinfo=timezone.utc)
@@ -59,4 +60,27 @@ def build_version(source_response_id: int) -> LegislationVersion:
         source=SourceName.SSO,
         legislation_id=1,
         source_response_id=source_response_id,
+    )
+
+
+def build_section(
+    legislation_version_id: int,
+    ordinal: int,
+    printed_number: str,
+    heading: str,
+    section_text: str,
+) -> LegislationSection:
+    return LegislationSection(
+        ordinal=ordinal,
+        printed_number=printed_number,
+        heading=heading,
+        part_heading="PART 1\nPRELIMINARY",
+        text=section_text,
+        first_page_number=1,
+        last_page_number=2,
+        sso_anchor=f"#pr{printed_number}-",
+        kind=LegislationSectionKind.SECTION,
+        is_repealed=False,
+        is_on_image_page=False,
+        legislation_version_id=legislation_version_id,
     )

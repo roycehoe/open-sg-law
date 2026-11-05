@@ -5,8 +5,11 @@ from crud.legislation_section import CRUDLegislationSection
 from crud.legislation_version import CRUDLegislationVersion
 from database.legislation_section import LegislationSection
 from database.legislation_version import LegislationVersion
-from enums import LegislationSectionKind
-from tests.legislation_version_seed import build_version, seed_version_inputs
+from tests.legislation_version_seed import (
+    build_section,
+    build_version,
+    seed_version_inputs,
+)
 
 _PURPOSIVE_HEADING = (
     "Purposive interpretation of written law and use of extrinsic\nmaterials"
@@ -31,28 +34,6 @@ _STYLE_TEXT = (
 )
 
 
-def _build_section(
-    legislation_version_id: int,
-    ordinal: int,
-    printed_number: str,
-    heading: str,
-    section_text: str,
-) -> LegislationSection:
-    return LegislationSection(
-        ordinal=ordinal,
-        printed_number=printed_number,
-        heading=heading,
-        text=section_text,
-        first_page_number=1,
-        last_page_number=1,
-        sso_anchor=f"#pr{printed_number}-",
-        kind=LegislationSectionKind.SECTION,
-        is_repealed=False,
-        is_on_image_page=False,
-        legislation_version_id=legislation_version_id,
-    )
-
-
 def test_a_keyword_finds_only_the_section_that_holds_it(
     scratch_session: Session,
 ) -> None:
@@ -63,12 +44,10 @@ def test_a_keyword_finds_only_the_section_that_holds_it(
     assert legislation_version_id is not None
     CRUDLegislationSection(scratch_session).add_many(
         [
-            _build_section(
+            build_section(
                 legislation_version_id, 1, "9A", _PURPOSIVE_HEADING, _PURPOSIVE_TEXT
             ),
-            _build_section(
-                legislation_version_id, 2, "9B", _STYLE_HEADING, _STYLE_TEXT
-            ),
+            build_section(legislation_version_id, 2, "9B", _STYLE_HEADING, _STYLE_TEXT),
         ]
     )
 
