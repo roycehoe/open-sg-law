@@ -42,7 +42,7 @@ def test_a_complete_archive_listing_is_listed_at_its_earliest_capture() -> None:
     listings = get_listings(listing_page_rows)
 
     assert listings.incomplete_harvest_run_ids == []
-    assert listings.listings == [
+    assert listings.complete_listings == [
         Listing(
             listed_at=_ARCHIVE_LISTED_AT,
             source=SourceName.INTERNET_ARCHIVE,
@@ -56,8 +56,12 @@ def test_an_sso_listing_is_listed_when_it_was_fetched() -> None:
 
     listings = get_listings(listing_page_rows)
 
-    assert [listing.listed_at for listing in listings.listings] == [_SSO_FETCHED_AT]
-    assert [listing.source for listing in listings.listings] == [SourceName.SSO]
+    assert [listing.listed_at for listing in listings.complete_listings] == [
+        _SSO_FETCHED_AT
+    ]
+    assert [listing.source for listing in listings.complete_listings] == [
+        SourceName.SSO
+    ]
 
 
 def test_a_listing_missing_a_page_is_incomplete_and_gives_no_rows() -> None:
@@ -70,7 +74,7 @@ def test_a_listing_missing_a_page_is_incomplete_and_gives_no_rows() -> None:
 
     listings = get_listings(first_run_without_page_one + second_run_without_page_two)
 
-    assert listings.listings == []
+    assert listings.complete_listings == []
     assert listings.incomplete_harvest_run_ids == [1, 2]
 
 
@@ -84,7 +88,7 @@ def test_a_page_with_no_text_or_no_result_count_is_left_out() -> None:
 
     listings = get_listings(listing_page_rows)
 
-    assert listings.listings == []
+    assert listings.complete_listings == []
     assert listings.incomplete_harvest_run_ids == [1]
 
 

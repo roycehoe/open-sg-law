@@ -25,7 +25,7 @@ class Listing:
 
 @dataclass(frozen=True)
 class Listings:
-    listings: list[Listing]
+    complete_listings: list[Listing]
     incomplete_harvest_run_ids: list[int]
 
 
@@ -151,7 +151,7 @@ def build_legislation_write(
     legislations_to_insert: list[Legislation] = []
     legislation_updates: list[LegislationUpdate] = []
     unchanged_count = 0
-    for planned_legislation in build_planned_legislation(listings.listings):
+    for planned_legislation in build_planned_legislation(listings.complete_listings):
         legislation_row = sso_code_to_legislation_row.get(planned_legislation.sso_code)
         if legislation_row is None:
             legislations_to_insert.append(
