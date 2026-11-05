@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from sqlalchemy.engine import Engine
 from sqlmodel import Session
 
 from crud.database_size import CRUDDatabaseSize
@@ -120,3 +121,22 @@ def test_the_scratch_database_size_is_a_positive_number_of_bytes(
 
     assert isinstance(database_bytes, int)
     assert database_bytes > 0
+
+
+def test_a_stored_status_reads_back_equal_to_its_member_and_formats_as_its_name(
+    scratch_engine: Engine, scratch_session: Session
+) -> None:
+    seed_sources(scratch_session)
+    harvest_run = HarvestRun(
+        source=SourceName.SSO,
+        status=HarvestRunStatus.HALTED,
+        started_at=datetime.now(timezone.utc),
+    )
+    CRUDHarvestRun(scratch_session).create(harvest_run)
+
+    with Session(scratch_engine) as session:
+        stored_run = session.get(HarvestRun, harvest_run.id)
+
+        assert stored_run is not None
+        assert stored_run.status == HarvestRunStatus.HALTED
+        assert f"{stored_run.status}" == "HALTED"
