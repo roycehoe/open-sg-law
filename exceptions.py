@@ -1,0 +1,2 @@
+class OpenSgLawError(Exception):
+    pass
