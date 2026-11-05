@@ -38,12 +38,28 @@ _UNREADABLE_BODY = b"not a pdf"
 _FLAG_COUNT = 2
 
 
-def _seed_archive_copy(session: Session) -> None:
+def _seed_ia1965_document(
+    session: Session,
+    source_name: SourceName,
+    requested_url: str,
+    body_bytes: bytes,
+    fetched_at: datetime,
+) -> None:
     seed_sources(session)
     seed_legislation(session, {"IA1965": _IA1965_TITLE})
     seed_document(
         session,
-        seed_harvest_run(session, SourceName.INTERNET_ARCHIVE),
+        seed_harvest_run(session, source_name),
+        source_name,
+        requested_url,
+        body_bytes,
+        fetched_at,
+    )
+
+
+def _seed_archive_copy(session: Session) -> None:
+    _seed_ia1965_document(
+        session,
         SourceName.INTERNET_ARCHIVE,
         IA1965_ARCHIVE_URL,
         IA1965_BODY,
@@ -135,11 +151,8 @@ def test_a_later_sso_copy_with_the_same_printed_date_becomes_newest(
 def test_a_document_that_is_not_a_pdf_is_skipped_with_the_pdf_text_message(
     scratch_session: Session,
 ) -> None:
-    seed_sources(scratch_session)
-    seed_legislation(scratch_session, {"IA1965": _IA1965_TITLE})
-    seed_document(
+    _seed_ia1965_document(
         scratch_session,
-        seed_harvest_run(scratch_session, SourceName.SSO),
         SourceName.SSO,
         IA1965_OTHER_SSO_URL,
         _UNREADABLE_BODY,
@@ -155,11 +168,8 @@ def test_a_document_that_is_not_a_pdf_is_skipped_with_the_pdf_text_message(
 
 
 def test_a_url_for_an_unknown_code_is_skipped(scratch_session: Session) -> None:
-    seed_sources(scratch_session)
-    seed_legislation(scratch_session, {"IA1965": _IA1965_TITLE})
-    seed_document(
+    _seed_ia1965_document(
         scratch_session,
-        seed_harvest_run(scratch_session, SourceName.INTERNET_ARCHIVE),
         SourceName.INTERNET_ARCHIVE,
         AA1906_ARCHIVE_URL,
         AA1906_BODY,
@@ -177,11 +187,8 @@ def test_a_url_for_an_unknown_code_is_skipped(scratch_session: Session) -> None:
 def test_a_point_in_time_url_is_skipped_as_not_a_plain_act_pdf(
     scratch_session: Session,
 ) -> None:
-    seed_sources(scratch_session)
-    seed_legislation(scratch_session, {"IA1965": _IA1965_TITLE})
-    seed_document(
+    _seed_ia1965_document(
         scratch_session,
-        seed_harvest_run(scratch_session, SourceName.SSO),
         SourceName.SSO,
         IA1965_POINT_IN_TIME_URL,
         IA1965_BODY,
