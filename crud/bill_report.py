@@ -17,5 +17,5 @@ class CRUDBillReport:
 
     def delete_all(self) -> None:
         statement = delete(BillReport)
-        self.session.exec(statement)
+        self.session.execute(statement)
         self.session.flush()

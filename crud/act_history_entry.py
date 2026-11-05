@@ -25,5 +25,5 @@ class CRUDActHistoryEntry:
 
     def delete_all(self) -> None:
         statement = delete(ActHistoryEntry)
-        self.session.exec(statement)
+        self.session.execute(statement)
         self.session.flush()
