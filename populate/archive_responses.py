@@ -36,7 +36,10 @@ from services.source_response import (
     get_body_text,
     get_sso_listing_page_of_response,
 )
-from utils.archive_capture_url import build_archive_capture_url
+from utils.archive_capture_url import (
+    CAPTURE_TIMESTAMP_FORMAT,
+    build_archive_capture_url,
+)
 from utils.sso_listing import (
     build_sso_listing_url,
 )
@@ -46,7 +49,6 @@ _PDF_MIME_TYPE = "application/pdf"
 _BODIES_PER_COMMIT = 100
 _HTTP_OK = 200
 _PDF_SIGNATURE = b"%PDF-"
-_CAPTURE_TIMESTAMP_FORMAT = "%Y%m%d%H%M%S"
 
 
 @dataclass
@@ -307,7 +309,7 @@ def populate_archive_responses(
             harvest_run,
             harvest_run_id,
             night_progress,
-            clock().strftime(_CAPTURE_TIMESTAMP_FORMAT),
+            clock().strftime(CAPTURE_TIMESTAMP_FORMAT),
         )
         _fetch_act_captures(session, harvest_run, harvest_run_id, night_progress)
         _commit_progress(session, harvest_run, night_progress)

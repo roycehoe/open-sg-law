@@ -4,9 +4,7 @@ from typing import Optional
 
 from crud.legislation_version import LegislationVersionRow
 from services.legislation_version import (
-    ArchiveCapture,
     PrintedVersionDate,
-    get_archive_capture,
     get_newest_version_updates,
     get_printed_version_date,
 )
@@ -14,10 +12,6 @@ from utils.legislation_version_update import LegislationVersionNewestUpdate
 from utils.pdf_text import PdfPage, get_pdf_pages
 
 _FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
-_IA1965_ORIGINAL_URL = "https://sso.agc.gov.sg/Act/IA1965?ViewType=Pdf&_=20251216194555"
-_IA1965_ARCHIVE_URL = (
-    f"https://web.archive.org/web/20260101041857id_/{_IA1965_ORIGINAL_URL}"
-)
 _EARLIER_CAPTURED_AT = datetime(2026, 1, 1, 4, 18, 57, tzinfo=timezone.utc)
 _LATER_CAPTURED_AT = datetime(2026, 11, 5, 19, 0, tzinfo=timezone.utc)
 
@@ -48,16 +42,6 @@ def test_a_footer_date_gives_the_date_when_no_line_says_version_in_force() -> No
 
 def test_no_pages_give_no_date() -> None:
     assert get_printed_version_date([]) is None
-
-
-def test_an_archive_url_gives_its_timestamp_and_original_url() -> None:
-    assert get_archive_capture(_IA1965_ARCHIVE_URL) == ArchiveCapture(
-        timestamp="20260101041857", original_url=_IA1965_ORIGINAL_URL
-    )
-
-
-def test_an_sso_url_is_not_an_archive_capture() -> None:
-    assert get_archive_capture(_IA1965_ORIGINAL_URL) is None
 
 
 def _build_row(

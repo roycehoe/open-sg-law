@@ -1,19 +1,16 @@
-import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from crud.source_response import ListingPageRow
 from enums import SourceName
 from exceptions import OpenSgLawListingParseError
+from utils.archive_capture_url import get_archive_capture, get_capture_time
 from utils.sso_listing import (
     SsoListingRow,
     get_sso_listing_page,
     get_sso_listing_page_index,
 )
-
-_CAPTURE_TIMESTAMP_PATTERN = re.compile(r"/web/(\d{14})id_/")
-_CAPTURE_TIMESTAMP_FORMAT = "%Y%m%d%H%M%S"
 
 
 @dataclass(frozen=True)
@@ -49,14 +46,12 @@ class _ParsedPage:
 def _get_listed_at(listing_page_row: ListingPageRow) -> datetime:
     if listing_page_row.source != SourceName.INTERNET_ARCHIVE:
         return listing_page_row.fetched_at
-    match = _CAPTURE_TIMESTAMP_PATTERN.search(listing_page_row.final_url)
-    if match is None:
+    archive_capture = get_archive_capture(listing_page_row.final_url)
+    if archive_capture is None:
         raise OpenSgLawListingParseError(
             f"The archive listing page {listing_page_row.final_url} holds no capture time"
         )
-    return datetime.strptime(match.group(1), _CAPTURE_TIMESTAMP_FORMAT).replace(
-        tzinfo=timezone.utc
-    )
+    return get_capture_time(archive_capture.timestamp)
 
 
 def _get_parsed_page(listing_page_row: ListingPageRow) -> Optional[_ParsedPage]:

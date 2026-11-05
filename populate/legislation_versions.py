@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from sqlmodel import Session
@@ -16,16 +16,18 @@ from exceptions import (
 )
 from services.archive_capture import get_cdx_captures
 from services.legislation_version import (
-    ArchiveCapture,
-    get_archive_capture,
     get_newest_version_updates,
     get_printed_version_date,
+)
+from utils.archive_capture_url import (
+    ArchiveCapture,
+    get_archive_capture,
+    get_capture_time,
 )
 from utils.pdf_text import get_pdf_pages
 from utils.sso_act_url import SsoActPdf, get_sso_act_pdf
 
 _HTTP_OK = 200
-_CAPTURE_TIMESTAMP_FORMAT = "%Y%m%d%H%M%S"
 _NOT_A_PLAIN_ACT_PDF_REASON = "not a plain Act PDF"
 _NOT_AN_ARCHIVE_CAPTURE_REASON = "not an archive capture URL"
 
@@ -77,9 +79,7 @@ def _get_captured_at(
 ) -> datetime:
     if archive_capture is None:
         return document_row.fetched_at
-    return datetime.strptime(
-        archive_capture.timestamp, _CAPTURE_TIMESTAMP_FORMAT
-    ).replace(tzinfo=timezone.utc)
+    return get_capture_time(archive_capture.timestamp)
 
 
 def _build_legislation_version(
