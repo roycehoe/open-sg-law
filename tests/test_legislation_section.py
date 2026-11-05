@@ -138,3 +138,47 @@ def test_a_page_with_no_section_start_raises() -> None:
 
     with pytest.raises(OpenSgLawSectionParseError, match="IA1965 prints no section"):
         get_parsed_legislation(_INTERPRETATION_ACT_CODE, pdf_pages[1:2])
+
+
+def test_the_arrangement_list_and_cover_are_front_matter_and_start_no_section() -> None:
+    pdf_pages = _get_pages("IA1965-p1-4.pdf")
+
+    parsed_legislation = get_parsed_legislation(_INTERPRETATION_ACT_CODE, pdf_pages)
+    first_section = parsed_legislation.sections[0]
+
+    assert [
+        parsed_section.printed_number for parsed_section in parsed_legislation.sections
+    ] == ["1"]
+    assert first_section.heading == "Short title"
+    assert first_section.part_heading is None
+    assert first_section.division_heading is None
+    assert first_section.text == "1. This Act is the Interpretation Act 1965."
+
+
+def test_the_front_matter_characters_are_left_out_of_the_body_count() -> None:
+    pdf_pages = _get_pages("IA1965-p1-4.pdf")
+
+    parsed_legislation = get_parsed_legislation(_INTERPRETATION_ACT_CODE, pdf_pages)
+    first_section = parsed_legislation.sections[0]
+    heading_and_text_length = len("Short title") + len(first_section.text)
+
+    assert parsed_legislation.body_character_count == heading_and_text_length
+    assert parsed_legislation.section_character_count == heading_and_text_length
+
+
+def test_the_legislative_history_is_left_out_of_every_section() -> None:
+    pdf_pages = _get_pages("IA1965-history.pdf")
+
+    parsed_legislation = get_parsed_legislation(_INTERPRETATION_ACT_CODE, pdf_pages)
+    last_section = parsed_legislation.sections[-1]
+
+    assert [
+        parsed_section.printed_number for parsed_section in parsed_legislation.sections
+    ] == ["52", "53", "54", "55"]
+    assert last_section.heading == "Act to bind Government"
+    assert last_section.text == "55. This Act binds the Government."
+    assert all(
+        "LEGISLATIVE HISTORY" not in parsed_section.text
+        and "Act XIV of 1867" not in parsed_section.text
+        for parsed_section in parsed_legislation.sections
+    )

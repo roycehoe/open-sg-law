@@ -11,6 +11,8 @@ _PART_PATTERN = re.compile(r"^PART \d+[A-Z]*$")
 _DIVISION_PATTERN = re.compile(r"^Division \d+[A-Z]* — ")
 _OPENING_QUOTE = "“"
 _CLOSING_QUOTE = "”"
+_BODY_END_LINES = frozenset({"LEGISLATIVE HISTORY", "COMPARATIVE TABLE"})
+_CONTINUED_SUFFIX = "— continued"
 
 
 @dataclass(frozen=True)
@@ -66,6 +68,7 @@ class _SectionWalk:
         self.division_heading: Optional[str] = None
         self.division_line_index: Optional[int] = None
         self.body_first_line_index: Optional[int] = None
+        self.is_body_over: bool = False
 
     def _add_to_section_text(
         self, text: str, page_number: int, line_index: int
@@ -76,6 +79,13 @@ class _SectionWalk:
         current_section.text_lines.append(text)
         current_section.last_page_number = page_number
         self.kept_line_indices.add(line_index)
+
+    def _clear_part_and_division(self) -> None:
+        self.part_heading = None
+        self.part_first_line_index = None
+        self.is_reading_part_title = False
+        self.division_heading = None
+        self.division_line_index = None
 
     def _flush_held_headings(self) -> None:
         for held_heading in self.held_headings:
@@ -131,6 +141,11 @@ class _SectionWalk:
         self.held_headings = []
 
     def read_line(self, line: PdfLine, page_number: int) -> None:
+        if self.is_body_over:
+            return
+        if self.quote_depth == 0 and line.text in _BODY_END_LINES:
+            self.is_body_over = True
+            return
         line_index = len(self.line_lengths)
         self.line_lengths.append(len(line.text))
         quote_depth_before = self.quote_depth
@@ -144,6 +159,8 @@ class _SectionWalk:
             self._add_to_section_text(line.text, page_number, line_index)
             return
 
+        if line.text.endswith(_CONTINUED_SUFFIX):
+            return
         if _PART_PATTERN.match(line.text):
             self._flush_held_headings()
             self.part_heading = line.text
@@ -180,6 +197,8 @@ class _SectionWalk:
             self.held_headings.append(_HeldLine(line.text, page_number, line_index))
             return
         self._flush_held_headings()
+        if not self.sections:
+            self._clear_part_and_division()
         self._add_to_section_text(line.text, page_number, line_index)
 
     def get_parsed_legislation(self) -> ParsedLegislation:
