@@ -56,3 +56,7 @@ class OpenSgLawCdxAnswerError(OpenSgLawError):
 
 class OpenSgLawHansardLinkError(OpenSgLawError):
     pass
+
+
+class OpenSgLawPdfTextError(OpenSgLawError):
+    pass
