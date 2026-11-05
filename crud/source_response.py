@@ -1,7 +1,8 @@
 from sqlalchemy.dialects.postgresql import insert
-from sqlmodel import Session, col
+from sqlmodel import Session, col, select
 
 from database.source_response import SourceResponse
+from enums import ResponseKind, SourceName
 
 
 class CRUDSourceResponse:
@@ -31,3 +32,15 @@ class CRUDSourceResponse:
             .returning(col(SourceResponse.id))
         )
         return self.session.execute(statement).first() is not None
+
+    def get_requested_urls_by_source_and_kind_and_status_code_and_body_bytes_not_null(
+        self, source: SourceName, kind: ResponseKind, status_code: int
+    ) -> list[str]:
+        statement = (
+            select(SourceResponse.requested_url)
+            .where(SourceResponse.source == source)
+            .where(SourceResponse.kind == kind)
+            .where(SourceResponse.status_code == status_code)
+            .where(col(SourceResponse.body_bytes).is_not(None))
+        )
+        return list(self.session.exec(statement).all())

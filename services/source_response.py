@@ -30,7 +30,7 @@ def _is_pdf(body: bytes, content_type: Optional[str]) -> bool:
     return content_type.lower().startswith(_PDF_CONTENT_TYPE)
 
 
-def _get_body_text(body: bytes, content_type: Optional[str]) -> Optional[str]:
+def get_body_text(body: bytes, content_type: Optional[str]) -> Optional[str]:
     if _is_pdf(body, content_type):
         return None
     try:
@@ -50,7 +50,7 @@ def build_source_response(
     source: SourceName,
     harvest_run_id: int,
 ) -> SourceResponse:
-    body_text = _get_body_text(
+    body_text = get_body_text(
         source_http_response.body, source_http_response.content_type
     )
     return SourceResponse(

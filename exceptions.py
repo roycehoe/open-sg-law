@@ -44,3 +44,7 @@ class OpenSgLawListingParseError(OpenSgLawError):
 
 class OpenSgLawHarvestHaltError(OpenSgLawError):
     pass
+
+
+class OpenSgLawSsoWindowError(OpenSgLawError):
+    pass
