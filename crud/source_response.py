@@ -1,8 +1,24 @@
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Optional
+
 from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, col, func, select
 
 from database.source_response import SourceResponse
 from enums import ResponseKind, SourceName
+
+
+@dataclass(frozen=True)
+class ListingPageRow:
+    id: int
+    requested_url: str
+    final_url: str
+    content_type: Optional[str]
+    body_text: Optional[str]
+    fetched_at: datetime
+    source: SourceName
+    harvest_run_id: int
 
 
 class CRUDSourceResponse:
@@ -56,3 +72,23 @@ class CRUDSourceResponse:
             .where(SourceResponse.status_code == status_code)
         )
         return self.session.exec(statement).one()
+
+    def get_listing_page_rows_by_kind_and_status_code(
+        self, kind: ResponseKind, status_code: int
+    ) -> list[ListingPageRow]:
+        statement = (
+            select(
+                SourceResponse.id,
+                SourceResponse.requested_url,
+                SourceResponse.final_url,
+                SourceResponse.content_type,
+                SourceResponse.body_text,
+                SourceResponse.fetched_at,
+                SourceResponse.source,
+                SourceResponse.harvest_run_id,
+            )
+            .where(SourceResponse.kind == kind)
+            .where(SourceResponse.status_code == status_code)
+            .order_by(SourceResponse.harvest_run_id, col(SourceResponse.id))
+        )
+        return [ListingPageRow(*row) for row in self.session.exec(statement).all()]
