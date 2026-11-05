@@ -63,3 +63,7 @@ class ActHistoryDefect(StrEnum):
     NO_DATE_PRINTED = "NO_DATE_PRINTED"
     MISSING_READING = "MISSING_READING"
     PAGE_BREAK_NOISE = "PAGE_BREAK_NOISE"
+
+
+class LegislationSectionKind(StrEnum):
+    SECTION = "SECTION"

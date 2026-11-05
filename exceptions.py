@@ -60,3 +60,7 @@ class OpenSgLawHansardLinkError(OpenSgLawError):
 
 class OpenSgLawPdfTextError(OpenSgLawError):
     pass
+
+
+class OpenSgLawSectionParseError(OpenSgLawError):
+    pass
