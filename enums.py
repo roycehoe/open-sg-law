@@ -69,3 +69,9 @@ class LegislationSectionKind(StrEnum):
     SECTION = "SECTION"
     ARTICLE = "ARTICLE"
     SCHEDULE = "SCHEDULE"
+
+
+class AliasKind(StrEnum):
+    FULL_TITLE = "FULL_TITLE"
+    TITLE_WITHOUT_YEAR = "TITLE_WITHOUT_YEAR"
+    SSO_CODE = "SSO_CODE"
