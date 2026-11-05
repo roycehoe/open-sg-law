@@ -12,6 +12,9 @@ _VERSION_IN_FORCE_PATTERN = re.compile(r"version in force from (\d{1,2}/\d{1,2}/
 _VERSION_IN_FORCE_FORMAT = "%d/%m/%Y"
 _FOOTER_DATE_PATTERN = re.compile(r"^(\d{1,2}\.\d{1,2}\.\d{4})$")
 _FOOTER_DATE_FORMAT = "%d.%m.%Y"
+_IN_FORCE_FORM = "in force"
+_FOOTER_FORM = "footer"
+_NO_DATE_FORM = "none"
 
 
 @dataclass(frozen=True)
@@ -50,6 +53,14 @@ def get_printed_version_date(pdf_pages: list[PdfPage]) -> Optional[PrintedVersio
                 version_date=_get_version_date(printed_text, _FOOTER_DATE_FORMAT),
             )
     return None
+
+
+def get_printed_date_form(printed_text: Optional[str]) -> str:
+    if printed_text is None:
+        return _NO_DATE_FORM
+    if _FOOTER_DATE_PATTERN.match(printed_text) is not None:
+        return _FOOTER_FORM
+    return _IN_FORCE_FORM
 
 
 def get_newest_version_updates(

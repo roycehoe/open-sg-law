@@ -40,6 +40,7 @@ class SkippedDocument:
 
 @dataclass(frozen=True)
 class LegislationVersionWrite:
+    document_count: int
     legislation_versions_to_insert: list[LegislationVersion]
     skipped_documents: list[SkippedDocument]
     skipped_cdx_answer_count: int
@@ -188,6 +189,7 @@ def get_legislation_version_write(session: Session) -> LegislationVersionWrite:
                 SkippedDocument(document_row.requested_url, str(error))
             )
     return LegislationVersionWrite(
+        document_count=len(document_rows),
         legislation_versions_to_insert=legislation_versions_to_insert,
         skipped_documents=skipped_documents,
         skipped_cdx_answer_count=capture_digests.skipped_cdx_answer_count,

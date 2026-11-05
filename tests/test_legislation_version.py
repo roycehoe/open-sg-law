@@ -6,6 +6,7 @@ from crud.legislation_version import LegislationVersionRow
 from services.legislation_version import (
     PrintedVersionDate,
     get_newest_version_updates,
+    get_printed_date_form,
     get_printed_version_date,
 )
 from utils.legislation_version_update import LegislationVersionNewestUpdate
@@ -42,6 +43,12 @@ def test_a_footer_date_gives_the_date_when_no_line_says_version_in_force() -> No
 
 def test_no_pages_give_no_date() -> None:
     assert get_printed_version_date([]) is None
+
+
+def test_a_printed_text_gives_its_form() -> None:
+    assert get_printed_date_form("25/11/2024") == "in force"
+    assert get_printed_date_form("31.12.2021") == "footer"
+    assert get_printed_date_form(None) == "none"
 
 
 def _build_row(
