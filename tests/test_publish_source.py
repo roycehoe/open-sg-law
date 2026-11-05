@@ -8,9 +8,7 @@ from sqlalchemy.exc import ProgrammingError
 from sqlmodel import Session, SQLModel
 
 import scripts.publish_source as publish_source_script
-from crud.source import CRUDSource
 from crud.source_grant import CRUDSourceGrant
-from database.source import Source
 from enums import PublishStatus, SourceName
 from exceptions import (
     OpenSgLawReasonError,
@@ -25,7 +23,7 @@ from tests.site_role_seed import (
     has_site_role_select,
     revoke_site_role_grants,
 )
-from tests.source_seed import seed_sources
+from tests.source_seed import get_stored_source, seed_sources
 
 _PROTECTED_DATABASE_URL = "postgresql://u:p@localhost:5435/x"
 _PUBLISH_REASON = "Permission letter dated 3 November 2026"
@@ -75,13 +73,6 @@ def _grant_site_role(engine: Engine, schema: str, table_names: list[str]) -> Non
         session.commit()
 
 
-def _get_stored_source(engine: Engine, source_name: SourceName) -> Source:
-    with Session(engine) as session:
-        source = CRUDSource(session).get_by_name(source_name)
-        assert source is not None
-        return source
-
-
 def test_publishing_elitigation_sets_published_with_the_reason(
     scratch_engine: Engine, scratch_session: Session, log_recorder: _LogRecorder
 ) -> None:
@@ -95,7 +86,7 @@ def test_publishing_elitigation_sets_published_with_the_reason(
         is_commit=True,
     )
 
-    stored_source = _get_stored_source(scratch_engine, SourceName.ELITIGATION)
+    stored_source = get_stored_source(scratch_engine, SourceName.ELITIGATION)
     assert stored_source.publish_status == PublishStatus.PUBLISHED
     assert stored_source.publish_status_reason == _PUBLISH_REASON
     assert stored_source.publish_status_changed_at is not None
@@ -115,7 +106,7 @@ def test_withdrawing_sso_sets_unpublished(
         is_commit=True,
     )
 
-    stored_source = _get_stored_source(scratch_engine, SourceName.SSO)
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
     assert stored_source.publish_status == PublishStatus.UNPUBLISHED
     assert stored_source.publish_status_reason == _WITHDRAW_REASON
 
@@ -133,7 +124,7 @@ def test_publishing_a_published_source_is_refused(
             is_commit=True,
         )
 
-    stored_source = _get_stored_source(scratch_engine, SourceName.SSO)
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
     assert stored_source.publish_status_reason is None
 
 
@@ -148,7 +139,7 @@ def test_a_blank_reason_is_refused_as_a_reason_error(
         )
 
     assert (
-        _get_stored_source(scratch_engine, SourceName.SSO).publish_status
+        get_stored_source(scratch_engine, SourceName.SSO).publish_status
         == PublishStatus.PUBLISHED
     )
 
@@ -165,7 +156,7 @@ def test_dry_run_writes_nothing(
         is_commit=False,
     )
 
-    stored_source = _get_stored_source(scratch_engine, SourceName.ELITIGATION)
+    stored_source = get_stored_source(scratch_engine, SourceName.ELITIGATION)
     assert stored_source.publish_status == PublishStatus.UNPUBLISHED
     assert stored_source.publish_status_reason is None
     assert stored_source.publish_status_changed_at is None
@@ -193,7 +184,7 @@ def test_commit_refuses_the_protected_port_before_any_change(
             is_commit=True,
         )
 
-    stored_source = _get_stored_source(scratch_engine, SourceName.ELITIGATION)
+    stored_source = get_stored_source(scratch_engine, SourceName.ELITIGATION)
     assert stored_source.publish_status == PublishStatus.UNPUBLISHED
     assert stored_source.publish_status_reason is None
     assert log_recorder.messages == []
@@ -239,7 +230,7 @@ def test_withdrawing_sso_revokes_its_tables_in_the_same_commit(
     )
 
     assert (
-        _get_stored_source(scratch_engine, SourceName.SSO).publish_status
+        get_stored_source(scratch_engine, SourceName.SSO).publish_status
         == PublishStatus.UNPUBLISHED
     )
     for table_name in _SSO_TABLE_NAMES:
@@ -300,7 +291,7 @@ def test_dry_run_logs_the_grant_changes_and_makes_none(
     for table_name in TABLE_NAME_TO_SOURCES:
         assert has_site_role_select(scratch_engine, site_role_schema, table_name)
     assert (
-        _get_stored_source(scratch_engine, SourceName.SSO).publish_status
+        get_stored_source(scratch_engine, SourceName.SSO).publish_status
         == PublishStatus.PUBLISHED
     )
     assert log_recorder.messages[-1] == "Dry run: nothing written"
@@ -323,6 +314,6 @@ def test_a_failed_grant_leaves_the_status_unchanged(
             is_commit=True,
         )
 
-    stored_source = _get_stored_source(scratch_engine, SourceName.ELITIGATION)
+    stored_source = get_stored_source(scratch_engine, SourceName.ELITIGATION)
     assert stored_source.publish_status == PublishStatus.UNPUBLISHED
     assert stored_source.publish_status_reason is None

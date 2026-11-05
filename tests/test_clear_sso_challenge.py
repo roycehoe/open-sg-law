@@ -7,7 +7,6 @@ from sqlmodel import Session
 
 import scripts.clear_sso_challenge as clear_sso_challenge_script
 from crud.source import CRUDSource
-from database.source import Source
 from enums import SourceName, SsoAccessState
 from exceptions import (
     OpenSgLawReasonError,
@@ -16,7 +15,7 @@ from exceptions import (
     OpenSgLawWriteTargetError,
 )
 from scripts.clear_sso_challenge import clear_sso_challenge
-from tests.source_seed import seed_sources
+from tests.source_seed import get_stored_source, seed_sources
 
 _PROTECTED_DATABASE_URL = "postgresql://u:p@localhost:5435/x"
 _CHALLENGE_REASON = "The listing page answered 403"
@@ -61,13 +60,6 @@ def _seed_sso_access_state(session: Session, sso_access_state: SsoAccessState) -
     session.commit()
 
 
-def _get_stored_sso_source(engine: Engine) -> Source:
-    with Session(engine) as session:
-        source = CRUDSource(session).get_by_name(SourceName.SSO)
-        assert source is not None
-        return source
-
-
 def test_dry_run_on_a_challenged_source_writes_nothing(
     scratch_engine: Engine, scratch_session: Session, log_recorder: _LogRecorder
 ) -> None:
@@ -75,7 +67,7 @@ def test_dry_run_on_a_challenged_source_writes_nothing(
 
     clear_sso_challenge(_CLEAR_REASON, is_commit=False)
 
-    stored_source = _get_stored_sso_source(scratch_engine)
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
     assert stored_source.sso_access_state == SsoAccessState.CHALLENGED
     assert stored_source.sso_access_state_reason == _CHALLENGE_REASON
     assert stored_source.sso_access_state_changed_at == _CHALLENGED_AT
@@ -90,7 +82,7 @@ def test_commit_sets_untested_with_the_reason_and_a_time(
 
     clear_sso_challenge(_CLEAR_REASON, is_commit=True)
 
-    stored_source = _get_stored_sso_source(scratch_engine)
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
     assert stored_source.sso_access_state == SsoAccessState.UNTESTED
     assert stored_source.sso_access_state_reason == _CLEAR_REASON
     assert stored_source.sso_access_state_changed_at is not None
@@ -112,7 +104,10 @@ def test_a_source_that_is_not_challenged_is_refused(
     with pytest.raises(OpenSgLawSourceStateError, match="no challenge to clear"):
         clear_sso_challenge(_CLEAR_REASON, is_commit=True)
 
-    assert _get_stored_sso_source(scratch_engine).sso_access_state == sso_access_state
+    assert (
+        get_stored_source(scratch_engine, SourceName.SSO).sso_access_state
+        == sso_access_state
+    )
 
 
 def test_a_blank_reason_is_refused_before_any_session_opens(
@@ -150,7 +145,7 @@ def test_commit_refuses_the_protected_port_before_any_change(
     with pytest.raises(OpenSgLawWriteTargetError, match="not 5435"):
         clear_sso_challenge(_CLEAR_REASON, is_commit=True)
 
-    stored_source = _get_stored_sso_source(scratch_engine)
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
     assert stored_source.sso_access_state == SsoAccessState.CHALLENGED
     assert stored_source.sso_access_state_reason == _CHALLENGE_REASON
     assert log_recorder.messages == []

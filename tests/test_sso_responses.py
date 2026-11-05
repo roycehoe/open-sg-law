@@ -1,22 +1,18 @@
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional
 from zoneinfo import ZoneInfo
 
 import pytest
 from sqlalchemy.engine import Engine
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 import populate.sso_responses as sso_responses_stage
 from crud.database_size import CRUDDatabaseSize
 from crud.harvest_run import CRUDHarvestRun
 from crud.source import CRUDSource
-from crud.source_response import CRUDSourceResponse
 from database.harvest_run import HarvestRun
-from database.source import Source
-from database.source_response import SourceResponse
-from enums import HarvestRunStatus, ResponseKind, SourceName, SsoAccessState
+from enums import HarvestRunStatus, SourceName, SsoAccessState
 from exceptions import (
     OpenSgLawGatewayError,
     OpenSgLawHarvestHaltError,
@@ -27,9 +23,16 @@ from exceptions import (
 from gateway.http import SSO_PACER
 from populate.sso_responses import populate_sso_responses
 from schemas.source_http_response import SourceHttpResponse
-from services.source_response import build_source_response
 from settings import settings
-from tests.source_seed import seed_sources
+from tests.listing_seed import FIRST_PAGE_BODY, LISTING_CONTENT_TYPE, SECOND_PAGE_BODY
+from tests.source_seed import (
+    build_source_http_answer,
+    get_harvest_runs,
+    get_source_responses,
+    get_stored_source,
+    seed_sources,
+    seed_stored_pdf,
+)
 from utils.sso_listing import build_sso_listing_url
 
 _SINGAPORE = ZoneInfo("Asia/Singapore")
@@ -40,13 +43,6 @@ _NEAR_CUTOFF = datetime(2026, 11, 6, 6, 52, tzinfo=_SINGAPORE)
 _CUTOFF = datetime(2026, 11, 6, 6, 55, tzinfo=_SINGAPORE)
 _DATABASE_HALT_BYTES = 10 * 1_024**3
 _FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures" / "sso_listing"
-_FIRST_LISTING_BODY = (
-    _FIXTURES_DIRECTORY / "browse-all-p1-20240716-trimmed.html"
-).read_bytes()
-_SECOND_LISTING_BODY = (
-    _FIXTURES_DIRECTORY / "browse-all-p2-20240719-trimmed.html"
-).read_bytes()
-_LISTING_CONTENT_TYPE = "text/html; charset=utf-8"
 _ROBOTS_CONTENT_TYPE = "text/plain"
 _PDF_CONTENT_TYPE = "application/pdf"
 _ROBOTS_BODY = b"User-agent: *\nCrawl-delay: 6\nDisallow: /search\n"
@@ -78,29 +74,17 @@ class _FakeClock:
         self.now += _REQUEST_GAP
 
 
-def _build_sso_answer(
-    status_code: int, content_type: Optional[str], body: bytes
-) -> SourceHttpResponse:
-    return SourceHttpResponse(
-        status_code=status_code,
-        requested_url="",
-        final_url="",
-        content_type=content_type,
-        body=body,
-    )
-
-
-_ROBOTS_ANSWER = _build_sso_answer(200, _ROBOTS_CONTENT_TYPE, _ROBOTS_BODY)
-_FIRST_LISTING_ANSWER = _build_sso_answer(
-    200, _LISTING_CONTENT_TYPE, _FIRST_LISTING_BODY
+_ROBOTS_ANSWER = build_source_http_answer(200, _ROBOTS_CONTENT_TYPE, _ROBOTS_BODY)
+_FIRST_LISTING_ANSWER = build_source_http_answer(
+    200, LISTING_CONTENT_TYPE, FIRST_PAGE_BODY
 )
-_SECOND_LISTING_ANSWER = _build_sso_answer(
-    200, _LISTING_CONTENT_TYPE, _SECOND_LISTING_BODY
+_SECOND_LISTING_ANSWER = build_source_http_answer(
+    200, LISTING_CONTENT_TYPE, SECOND_PAGE_BODY
 )
-_PDF_ANSWER = _build_sso_answer(200, _PDF_CONTENT_TYPE, _PDF_BODY)
-_FORBIDDEN_ANSWER = _build_sso_answer(403, "text/html", _CHALLENGE_BODY)
-_EMPTY_ACCEPTED_ANSWER = _build_sso_answer(202, None, b"")
-_NOT_FOUND_ANSWER = _build_sso_answer(404, "text/html", _NOT_FOUND_BODY)
+_PDF_ANSWER = build_source_http_answer(200, _PDF_CONTENT_TYPE, _PDF_BODY)
+_FORBIDDEN_ANSWER = build_source_http_answer(403, "text/html", _CHALLENGE_BODY)
+_EMPTY_ACCEPTED_ANSWER = build_source_http_answer(202, None, b"")
+_NOT_FOUND_ANSWER = build_source_http_answer(404, "text/html", _NOT_FOUND_BODY)
 
 
 def _get_pdf_url(pdf_path: str) -> str:
@@ -202,43 +186,6 @@ def _set_sso_access_state(session: Session, sso_access_state: SsoAccessState) ->
     session.commit()
 
 
-def _get_stored_sso_source(engine: Engine) -> Source:
-    with Session(engine) as session:
-        source = CRUDSource(session).get_by_name(SourceName.SSO)
-        assert source is not None
-        return source
-
-
-def _get_harvest_runs(session: Session) -> list[HarvestRun]:
-    return list(session.exec(select(HarvestRun)).all())
-
-
-def _get_source_responses(session: Session) -> list[SourceResponse]:
-    return list(session.exec(select(SourceResponse)).all())
-
-
-def _seed_stored_pdf(session: Session, pdf_path: str) -> None:
-    harvest_run = HarvestRun(
-        source=SourceName.SSO,
-        status=HarvestRunStatus.SUCCEEDED,
-        started_at=_NIGHT_START - timedelta(days=7),
-    )
-    CRUDHarvestRun(session).create(harvest_run)
-    assert harvest_run.id is not None
-    pdf_url = _get_pdf_url(pdf_path)
-    CRUDSourceResponse(session).insert_on_conflict_do_nothing(
-        build_source_response(
-            _PDF_ANSWER.model_copy(
-                update={"requested_url": pdf_url, "final_url": pdf_url}
-            ),
-            ResponseKind.DOCUMENT,
-            SourceName.SSO,
-            harvest_run.id,
-        )
-    )
-    session.commit()
-
-
 def _get_requested_pdf_paths(fake_sso: _FakeSso) -> list[str]:
     return [
         requested_url.removeprefix(settings.sso_base_url)
@@ -259,7 +206,7 @@ def test_a_run_outside_the_window_sends_nothing(
     with pytest.raises(OpenSgLawSsoWindowError, match="before the 03:00 window"):
         populate_sso_responses(scratch_session, fake_clock)
 
-    assert _get_harvest_runs(scratch_session) == []
+    assert get_harvest_runs(scratch_session) == []
     assert fake_sso.call_count == 0
 
 
@@ -276,7 +223,7 @@ def test_a_challenged_source_sends_nothing(
     with pytest.raises(OpenSgLawSourceStateError, match="SSO is CHALLENGED"):
         populate_sso_responses(scratch_session, fake_clock)
 
-    assert _get_harvest_runs(scratch_session) == []
+    assert get_harvest_runs(scratch_session) == []
     assert fake_sso.call_count == 0
 
 
@@ -291,14 +238,14 @@ def test_a_403_on_the_first_request_writes_challenged_and_halts(
 
     harvest_run = populate_sso_responses(scratch_session, fake_clock)
 
-    stored_source = _get_stored_sso_source(scratch_engine)
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
     assert stored_source.sso_access_state == SsoAccessState.CHALLENGED
     assert stored_source.sso_access_state_reason is not None
     assert "SSO answered 403" in stored_source.sso_access_state_reason
     assert stored_source.sso_access_state_changed_at == fake_clock.now
     assert harvest_run.status == HarvestRunStatus.HALTED
     assert harvest_run.halt_reason == stored_source.sso_access_state_reason
-    source_responses = _get_source_responses(scratch_session)
+    source_responses = get_source_responses(scratch_session)
     assert len(source_responses) == 1
     assert source_responses[0].status_code == _FORBIDDEN_ANSWER.status_code
     assert source_responses[0].body_text == _CHALLENGE_BODY.decode()
@@ -316,7 +263,7 @@ def test_a_202_with_an_empty_body_on_a_pdf_writes_challenged(
 
     harvest_run = populate_sso_responses(scratch_session, fake_clock)
 
-    stored_source = _get_stored_sso_source(scratch_engine)
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
     assert stored_source.sso_access_state == SsoAccessState.CHALLENGED
     assert stored_source.sso_access_state_reason is not None
     assert "SSO answered 202 with 0 bytes" in stored_source.sso_access_state_reason
@@ -336,14 +283,14 @@ def test_a_403_past_the_size_limit_writes_challenged(
 
     harvest_run = populate_sso_responses(scratch_session, fake_clock)
 
-    stored_source = _get_stored_sso_source(scratch_engine)
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
     assert stored_source.sso_access_state == SsoAccessState.CHALLENGED
     assert stored_source.sso_access_state_reason is not None
     assert "SSO answered 403" in stored_source.sso_access_state_reason
     assert stored_source.sso_access_state_changed_at is not None
     assert harvest_run.status == HarvestRunStatus.HALTED
     assert harvest_run.halt_reason == stored_source.sso_access_state_reason
-    assert len(_get_source_responses(scratch_session)) == 1
+    assert len(get_source_responses(scratch_session)) == 1
     assert fake_sso.call_count == 1
 
 
@@ -362,7 +309,7 @@ def test_a_run_that_starts_past_the_size_limit_sends_nothing(
     with pytest.raises(OpenSgLawHarvestHaltError, match="past the 10 GB halt"):
         populate_sso_responses(scratch_session, fake_clock)
 
-    assert _get_harvest_runs(scratch_session) == []
+    assert get_harvest_runs(scratch_session) == []
     assert fake_sso.call_count == 0
 
 
@@ -378,7 +325,7 @@ def test_an_expected_answer_past_the_size_limit_halts_before_the_next_request(
 
     harvest_run = populate_sso_responses(scratch_session, fake_clock)
 
-    assert _get_stored_sso_source(scratch_engine).sso_access_state == (
+    assert get_stored_source(scratch_engine, SourceName.SSO).sso_access_state == (
         SsoAccessState.SERVING
     )
     assert harvest_run.status == HarvestRunStatus.HALTED
@@ -398,7 +345,7 @@ def test_a_night_stores_robots_the_listing_and_the_new_pdfs(
 
     harvest_run = populate_sso_responses(scratch_session, fake_clock)
 
-    stored_source = _get_stored_sso_source(scratch_engine)
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
     assert stored_source.sso_access_state == SsoAccessState.SERVING
     assert stored_source.sso_access_state_reason == "First expected answer"
     assert harvest_run.status == HarvestRunStatus.SUCCEEDED
@@ -407,15 +354,25 @@ def test_a_night_stores_robots_the_listing_and_the_new_pdfs(
     assert harvest_run.requests_sent == _FULL_NIGHT_REQUEST_COUNT
     assert harvest_run.bodies_stored == _FULL_NIGHT_REQUEST_COUNT
     assert sorted(_get_requested_pdf_paths(fake_sso)) == sorted(_LISTED_PDF_PATHS)
-    assert len(_get_source_responses(scratch_session)) == _FULL_NIGHT_REQUEST_COUNT
+    assert len(get_source_responses(scratch_session)) == _FULL_NIGHT_REQUEST_COUNT
 
 
 def test_a_pdf_whose_stamp_is_stored_is_not_requested_and_new_codes_come_first(
     scratch_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     seed_sources(scratch_session)
-    _seed_stored_pdf(scratch_session, _LISTED_PDF_PATHS[0])
-    _seed_stored_pdf(scratch_session, _OLDER_ACRAA_PATH)
+    seed_stored_pdf(
+        scratch_session,
+        SourceName.SSO,
+        _NIGHT_START - timedelta(days=7),
+        _get_pdf_url(_LISTED_PDF_PATHS[0]),
+    )
+    seed_stored_pdf(
+        scratch_session,
+        SourceName.SSO,
+        _NIGHT_START - timedelta(days=7),
+        _get_pdf_url(_OLDER_ACRAA_PATH),
+    )
     fake_clock = _FakeClock(_NIGHT_START)
     fake_sso = _install_fake_sso(
         monkeypatch, fake_clock, _get_full_night_answers(_PDF_ANSWER)
@@ -506,5 +463,5 @@ def test_a_running_run_blocks_a_second_one(
     with pytest.raises(OpenSgLawHarvestRunError, match="still RUNNING"):
         populate_sso_responses(scratch_session, fake_clock)
 
-    assert len(_get_harvest_runs(scratch_session)) == 1
+    assert len(get_harvest_runs(scratch_session)) == 1
     assert fake_sso.call_count == 0

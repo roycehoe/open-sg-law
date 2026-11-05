@@ -1,18 +1,15 @@
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional
 
 import pytest
 from sqlalchemy.engine import Engine
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 import populate.archive_responses as archive_responses_stage
 from crud.database_size import CRUDDatabaseSize
 from crud.harvest_run import CRUDHarvestRun
-from crud.source_response import CRUDSourceResponse
 from database.harvest_run import HarvestRun
-from database.source_response import SourceResponse
 from enums import HarvestRunStatus, ResponseKind, SourceName
 from exceptions import (
     OpenSgLawGatewayError,
@@ -21,8 +18,14 @@ from exceptions import (
 )
 from populate.archive_responses import populate_archive_responses
 from schemas.source_http_response import SourceHttpResponse
-from services.source_response import build_source_response
-from tests.source_seed import seed_sources
+from tests.listing_seed import FIRST_PAGE_BODY, LISTING_CONTENT_TYPE, SECOND_PAGE_BODY
+from tests.source_seed import (
+    build_source_http_answer,
+    get_harvest_runs,
+    get_source_responses,
+    seed_sources,
+    seed_stored_pdf,
+)
 from utils.archive_capture_url import build_archive_capture_url
 from utils.sso_listing import build_sso_listing_url
 
@@ -30,19 +33,12 @@ _RUN_TIME = datetime(2026, 11, 6, 19, 0, tzinfo=timezone.utc)
 _CAPTURE_TIMESTAMP_FORMAT = "%Y%m%d%H%M%S"
 _DATABASE_HALT_BYTES = 10 * 1_024**3
 _FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures"
-_FIRST_LISTING_BODY = (
-    _FIXTURES_DIRECTORY / "sso_listing" / "browse-all-p1-20240716-trimmed.html"
-).read_bytes()
-_SECOND_LISTING_BODY = (
-    _FIXTURES_DIRECTORY / "sso_listing" / "browse-all-p2-20240719-trimmed.html"
-).read_bytes()
 _CLTPA_ANSWER_BODY = (
     _FIXTURES_DIRECTORY / "cdx" / "cdx-cltpa-pdf-trimmed.json"
 ).read_bytes()
 _OFFLINE_PAGE_BODY = (
     _FIXTURES_DIRECTORY / "archive" / "temporarily-offline-20261104.html"
 ).read_bytes()
-_LISTING_CONTENT_TYPE = "text/html; charset=utf-8"
 _CDX_CONTENT_TYPE = "application/json"
 _PDF_CONTENT_TYPE = "application/pdf"
 _PDF_BODY = b"%PDF-"
@@ -76,29 +72,21 @@ _FAILURE_HALT_COUNT = 3
 _COMMIT_EVERY_TWO_BODIES = 2
 
 
-def _build_answer(
-    status_code: int, content_type: Optional[str], body: bytes
-) -> SourceHttpResponse:
-    return SourceHttpResponse(
-        status_code=status_code,
-        requested_url="",
-        final_url="",
-        content_type=content_type,
-        body=body,
-    )
-
-
-_FIRST_LISTING_ANSWER = _build_answer(200, _LISTING_CONTENT_TYPE, _FIRST_LISTING_BODY)
-_SECOND_LISTING_ANSWER = _build_answer(200, _LISTING_CONTENT_TYPE, _SECOND_LISTING_BODY)
-_PDF_ANSWER = _build_answer(200, _PDF_CONTENT_TYPE, _PDF_BODY)
-_NOT_FOUND_ANSWER = _build_answer(404, "text/html", _NOT_FOUND_BODY)
-_CDX_ANSWER = _build_answer(
+_FIRST_LISTING_ANSWER = build_source_http_answer(
+    200, LISTING_CONTENT_TYPE, FIRST_PAGE_BODY
+)
+_SECOND_LISTING_ANSWER = build_source_http_answer(
+    200, LISTING_CONTENT_TYPE, SECOND_PAGE_BODY
+)
+_PDF_ANSWER = build_source_http_answer(200, _PDF_CONTENT_TYPE, _PDF_BODY)
+_NOT_FOUND_ANSWER = build_source_http_answer(404, "text/html", _NOT_FOUND_BODY)
+_CDX_ANSWER = build_source_http_answer(
     200,
     _CDX_CONTENT_TYPE,
     json.dumps([_CDX_HEADER, *_CDX_ROWS]).encode(),
 )
-_CLTPA_ANSWER = _build_answer(200, _CDX_CONTENT_TYPE, _CLTPA_ANSWER_BODY)
-_OFFLINE_ANSWER = _build_answer(200, "text/html", _OFFLINE_PAGE_BODY)
+_CLTPA_ANSWER = build_source_http_answer(200, _CDX_CONTENT_TYPE, _CLTPA_ANSWER_BODY)
+_OFFLINE_ANSWER = build_source_http_answer(200, "text/html", _OFFLINE_PAGE_BODY)
 
 
 def _get_full_run_answers(
@@ -167,36 +155,6 @@ def _install_fake_archive(
     return fake_archive
 
 
-def _get_harvest_runs(session: Session) -> list[HarvestRun]:
-    return list(session.exec(select(HarvestRun)).all())
-
-
-def _get_source_responses(session: Session) -> list[SourceResponse]:
-    return list(session.exec(select(SourceResponse)).all())
-
-
-def _seed_stored_capture(session: Session, timestamp: str, original_url: str) -> None:
-    harvest_run = HarvestRun(
-        source=SourceName.INTERNET_ARCHIVE,
-        status=HarvestRunStatus.SUCCEEDED,
-        started_at=_RUN_TIME - timedelta(days=7),
-    )
-    CRUDHarvestRun(session).create(harvest_run)
-    assert harvest_run.id is not None
-    capture_url = build_archive_capture_url(timestamp, original_url)
-    CRUDSourceResponse(session).insert_on_conflict_do_nothing(
-        build_source_response(
-            _PDF_ANSWER.model_copy(
-                update={"requested_url": capture_url, "final_url": capture_url}
-            ),
-            ResponseKind.DOCUMENT,
-            SourceName.INTERNET_ARCHIVE,
-            harvest_run.id,
-        )
-    )
-    session.commit()
-
-
 def test_a_run_stores_the_cdx_answer_the_listing_captures_and_one_pdf_per_code(
     scratch_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -217,7 +175,7 @@ def test_a_run_stores_the_cdx_answer_the_listing_captures_and_one_pdf_per_code(
         *[original_url for original_url, _timestamp in _LATEST_ACT_CAPTURES],
     ]
     assert _AA2001_EARLIER_URL not in fake_archive.get_requested_original_urls()
-    source_responses = _get_source_responses(scratch_session)
+    source_responses = get_source_responses(scratch_session)
     assert len(source_responses) == _FULL_RUN_REQUEST_COUNT
     assert all(
         source_response.source == SourceName.INTERNET_ARCHIVE
@@ -238,7 +196,12 @@ def test_a_stored_capture_is_not_fetched_again(
     scratch_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     seed_sources(scratch_session)
-    _seed_stored_capture(scratch_session, "20251231140314", _AA1906_URL)
+    seed_stored_pdf(
+        scratch_session,
+        SourceName.INTERNET_ARCHIVE,
+        _RUN_TIME - timedelta(days=7),
+        build_archive_capture_url("20251231140314", _AA1906_URL),
+    )
     fake_archive = _install_fake_archive(
         monkeypatch, _CDX_ANSWER, _get_full_run_answers(_PDF_ANSWER)
     )
@@ -282,7 +245,7 @@ def test_an_offline_cdx_answer_halts_the_run(
     assert fake_archive.get_requested_original_urls() == list(_LISTING_URLS)
     stored_kinds = [
         source_response.kind
-        for source_response in _get_source_responses(scratch_session)
+        for source_response in get_source_responses(scratch_session)
     ]
     assert ResponseKind.CDX_ANSWER in stored_kinds
 
@@ -347,7 +310,7 @@ def test_a_running_run_blocks_a_second_one(
     with pytest.raises(OpenSgLawHarvestRunError, match="still RUNNING"):
         populate_archive_responses(scratch_session, _get_run_time)
 
-    assert len(_get_harvest_runs(scratch_session)) == 1
+    assert len(get_harvest_runs(scratch_session)) == 1
     assert fake_archive.call_count == 0
 
 
@@ -367,7 +330,7 @@ def test_a_run_that_starts_past_the_size_limit_sends_nothing(
     with pytest.raises(OpenSgLawHarvestHaltError, match="past the 10 GB halt"):
         populate_archive_responses(scratch_session, _get_run_time)
 
-    assert _get_harvest_runs(scratch_session) == []
+    assert get_harvest_runs(scratch_session) == []
     assert fake_archive.call_count == 0
 
 
@@ -391,8 +354,8 @@ def test_bodies_are_committed_every_hundred(
         populate_archive_responses(scratch_session, _get_run_time)
 
     with Session(scratch_engine) as new_session:
-        source_responses = _get_source_responses(new_session)
-        harvest_runs = _get_harvest_runs(new_session)
+        source_responses = get_source_responses(new_session)
+        harvest_runs = get_harvest_runs(new_session)
     assert len(source_responses) == _COMMIT_EVERY_TWO_BODIES
     assert len(harvest_runs) == 1
     assert harvest_runs[0].status == HarvestRunStatus.FAILED
