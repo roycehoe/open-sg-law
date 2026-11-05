@@ -77,7 +77,7 @@ class CRUDSourceResponse:
         self, kind: ResponseKind, status_code: int
     ) -> list[ListingPageRow]:
         statement = (
-            select(
+            select(  # pyright: ignore[reportCallIssue] sqlmodel types select for at most four columns
                 SourceResponse.id,
                 SourceResponse.requested_url,
                 SourceResponse.final_url,

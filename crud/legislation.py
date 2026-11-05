@@ -30,7 +30,7 @@ class CRUDLegislation:
         return self.session.exec(statement).one()
 
     def get_rows(self) -> list[LegislationRow]:
-        statement = select(
+        statement = select(  # pyright: ignore[reportCallIssue] sqlmodel types select for at most four columns
             Legislation.id,
             Legislation.sso_code,
             Legislation.title,
