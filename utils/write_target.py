@@ -8,7 +8,7 @@ _LOCAL_PORT = 5436
 
 def validate_can_write(database_url: str) -> None:
     url = make_url(database_url)
-    if url.host is not None and url.host not in _LOCAL_HOSTS:
+    if url.host is not None and url.host.lower() not in _LOCAL_HOSTS:
         return
     if url.port != _LOCAL_PORT:
         raise OpenSgLawWriteTargetError(

@@ -14,6 +14,11 @@ def test_a_local_url_on_the_hansard_replica_port_is_refused() -> None:
         validate_can_write("postgresql://user:password@localhost:5435/anything")
 
 
+def test_an_uppercase_localhost_on_the_hansard_replica_port_is_refused() -> None:
+    with pytest.raises(OpenSgLawWriteTargetError):
+        validate_can_write("postgresql://user:password@LOCALHOST:5435/anything")
+
+
 def test_a_local_url_on_port_0_is_refused() -> None:
     with pytest.raises(OpenSgLawWriteTargetError):
         validate_can_write("postgresql://user:password@localhost:0/anything")
