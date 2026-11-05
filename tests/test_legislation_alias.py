@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from sqlmodel import Session
 
 from crud.legislation import CRUDLegislation, LegislationRow
@@ -11,12 +9,11 @@ from populate.legislation_aliases import (
     write_legislation_aliases,
 )
 from services.legislation_alias import PlannedAlias, build_planned_aliases
-from tests.document_seed import seed_legislation
+from tests.document_seed import ARCHIVE_FETCHED_AT, seed_legislation
 from tests.listing_seed import seed_listing
 from tests.source_seed import seed_sources
 from utils.legislation_update import LegislationUpdate
 
-_ARCHIVE_FETCHED_AT = datetime(2026, 11, 5, 18, 0, tzinfo=timezone.utc)
 _DATED_TITLE_ALIAS_COUNT = 18
 
 
@@ -53,7 +50,7 @@ def test_the_stage_plans_every_alias_once_and_nothing_after_the_write(
     scratch_session: Session,
 ) -> None:
     seed_sources(scratch_session)
-    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
     write_legislation(scratch_session, get_legislation_write(scratch_session))
     scratch_session.commit()
 

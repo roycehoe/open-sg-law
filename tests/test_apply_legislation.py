@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -11,12 +10,11 @@ from enums import SourceName
 from exceptions import OpenSgLawWriteCheckError, OpenSgLawWriteTargetError
 from scripts.apply_legislation import apply_legislation
 from services.legislation import LegislationWrite
+from tests.document_seed import ARCHIVE_FETCHED_AT, SSO_FETCHED_AT
 from tests.listing_seed import seed_listing
 from tests.source_seed import seed_sources
 
 _PROTECTED_DATABASE_URL = "postgresql://u:p@localhost:5435/x"
-_ARCHIVE_FETCHED_AT = datetime(2026, 11, 5, 18, 0, tzinfo=timezone.utc)
-_SSO_FETCHED_AT = datetime(2026, 11, 5, 19, 0, tzinfo=timezone.utc)
 _CODE_COUNT = 6
 
 
@@ -42,8 +40,8 @@ def test_a_dry_run_writes_nothing_and_logs_the_counts(
     scratch_session: Session, log_recorder: _LogRecorder
 ) -> None:
     seed_sources(scratch_session)
-    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
-    seed_listing(scratch_session, SourceName.SSO, _SSO_FETCHED_AT, page_indexes=(0,))
+    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.SSO, SSO_FETCHED_AT, page_indexes=(0,))
 
     apply_legislation(is_commit=False)
 
@@ -61,7 +59,7 @@ def test_commit_writes_the_planned_rows(
     scratch_session: Session, log_recorder: _LogRecorder
 ) -> None:
     seed_sources(scratch_session)
-    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
 
     apply_legislation(is_commit=True)
 
@@ -78,7 +76,7 @@ def test_a_second_commit_changes_nothing(
     scratch_session: Session, log_recorder: _LogRecorder
 ) -> None:
     seed_sources(scratch_session)
-    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
     apply_legislation(is_commit=True)
     log_recorder.messages.clear()
 
@@ -98,7 +96,7 @@ def test_commit_refuses_the_protected_port_before_any_write(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     seed_sources(scratch_session)
-    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
     monkeypatch.setattr(
         apply_legislation_script,
         "settings",
@@ -118,7 +116,7 @@ def test_commit_stores_nothing_when_the_stored_count_misses_the_plan(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     seed_sources(scratch_session)
-    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
 
     def skip_write(session: Session, legislation_write: LegislationWrite) -> None:
         return None

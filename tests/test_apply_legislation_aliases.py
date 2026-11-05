@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -12,11 +11,11 @@ from exceptions import OpenSgLawWriteCheckError, OpenSgLawWriteTargetError
 from populate.legislation import get_legislation_write, write_legislation
 from scripts.apply_legislation_aliases import apply_legislation_aliases
 from services.legislation_alias import LegislationAliasWrite
+from tests.document_seed import ARCHIVE_FETCHED_AT
 from tests.listing_seed import seed_listing
 from tests.source_seed import seed_sources
 
 _PROTECTED_DATABASE_URL = "postgresql://u:p@localhost:5435/x"
-_ARCHIVE_FETCHED_AT = datetime(2026, 11, 5, 18, 0, tzinfo=timezone.utc)
 _DATED_TITLE_ALIAS_COUNT = 18
 
 
@@ -40,7 +39,7 @@ def log_recorder(
 
 def _seed_legislation(session: Session) -> None:
     seed_sources(session)
-    seed_listing(session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
+    seed_listing(session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
     write_legislation(session, get_legislation_write(session))
     session.commit()
 

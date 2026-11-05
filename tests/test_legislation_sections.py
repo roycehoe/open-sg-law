@@ -8,8 +8,8 @@ from enums import LegislationSectionKind
 from populate.legislation_sections import get_version_sections, write_version_sections
 from tests.document_seed import seed_ia1965_version
 
-_BODY_CHARACTER_COUNT = 2960
-_SECTION_CHARACTER_COUNT = 2960
+_BODY_CHARACTER_COUNT = 2_960
+_SECTION_CHARACTER_COUNT = 2_960
 _EDITED_TEXT = "2. edited"
 
 
