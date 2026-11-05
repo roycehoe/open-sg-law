@@ -4,3 +4,7 @@ class OpenSgLawError(Exception):
 
 class OpenSgLawTestGuardError(OpenSgLawError):
     pass
+
+
+class OpenSgLawWriteTargetError(OpenSgLawError):
+    pass
