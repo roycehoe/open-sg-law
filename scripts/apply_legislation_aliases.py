@@ -8,11 +8,11 @@ from database.legislation_alias import LegislationAlias
 from exceptions import OpenSgLawWriteCheckError
 from logs import logger
 from populate.legislation_aliases import (
-    LegislationAliasWrite,
     get_legislation_alias_write,
     write_legislation_aliases,
 )
 from populate.written_tables import vacuum_analyze_written_tables
+from services.legislation_alias import LegislationAliasWrite
 from settings import settings
 from utils.write_target import validate_can_write
 

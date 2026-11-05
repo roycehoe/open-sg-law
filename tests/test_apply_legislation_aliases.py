@@ -10,8 +10,8 @@ from crud.legislation_alias import CRUDLegislationAlias
 from enums import SourceName
 from exceptions import OpenSgLawWriteCheckError, OpenSgLawWriteTargetError
 from populate.legislation import get_legislation_write, write_legislation
-from populate.legislation_aliases import LegislationAliasWrite
 from scripts.apply_legislation_aliases import apply_legislation_aliases
+from services.legislation_alias import LegislationAliasWrite
 from tests.listing_seed import seed_listing
 from tests.source_seed import seed_sources
 
