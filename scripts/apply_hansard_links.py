@@ -64,8 +64,17 @@ def _log_plan(hansard_link_plan: HansardLinkPlan, act_link_plan: ActLinkPlan) ->
     logger.info(
         f"Entries linked by rule: {_format_counts(Counter(entry.bill_link_source.value for entry in hansard_link_plan.entries if entry.bill_link_source is not None))}"
     )
+    unlinked_entry_label_to_count = Counter(
+        f"{entry.kind.value} {_get_decade_label(entry.first_reading_date)}"
+        for entry in hansard_link_plan.entries
+        if entry.bill_index is None
+        and (
+            entry.kind == ActHistoryEntryKind.ACT
+            or entry.kind == ActHistoryEntryKind.ORDINANCE
+        )
+    )
     logger.info(
-        f"Act and Ordinance entries not linked, by kind and decade of first reading: {_format_counts(Counter(f'{entry.kind.value} {_get_decade_label(entry.first_reading_date)}' for entry in hansard_link_plan.entries if entry.bill_index is None and (entry.kind == ActHistoryEntryKind.ACT or entry.kind == ActHistoryEntryKind.ORDINANCE)))}"
+        f"Act and Ordinance entries not linked, by kind and decade of first reading: {_format_counts(unlinked_entry_label_to_count)}"
     )
     logger.info(
         f"Entries by source defect: {_format_counts(Counter(defect.value for entry in act_link_entries for defect in entry.defects))}"
@@ -126,22 +135,8 @@ def apply_hansard_links(
     )
     act_link_plan_sha256 = _get_sha256(plan_file)
     report_export_sha256 = _get_sha256(report_export_file)
-    if not is_commit:
-        with Session(engine) as session:
-            hansard_link_plan = get_hansard_link_plan(
-                session,
-                act_link_plan,
-                hansard_report_export,
-                act_link_plan_sha256,
-                report_export_sha256,
-            )
-        _log_plan(hansard_link_plan, act_link_plan)
-        plan_output.write_text(hansard_link_plan.model_dump_json(indent=1))
-        logger.info("Dry run: nothing written")
-        return
-
-    validate_can_write(settings.database_url)
-    reviewed_plan = HansardLinkPlan.model_validate_json(plan_output.read_text())
+    if is_commit:
+        validate_can_write(settings.database_url)
     with Session(engine) as session:
         hansard_link_plan = get_hansard_link_plan(
             session,
@@ -151,6 +146,11 @@ def apply_hansard_links(
             report_export_sha256,
         )
         _log_plan(hansard_link_plan, act_link_plan)
+        if not is_commit:
+            plan_output.write_text(hansard_link_plan.model_dump_json(indent=1))
+            logger.info("Dry run: nothing written")
+            return
+        reviewed_plan = HansardLinkPlan.model_validate_json(plan_output.read_text())
         if hansard_link_plan != reviewed_plan:
             raise OpenSgLawWriteCheckError("The plan differs from the reviewed plan")
         write_hansard_link_plan(session, hansard_link_plan)
