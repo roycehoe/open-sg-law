@@ -1,5 +1,5 @@
 from sqlalchemy.dialects.postgresql import insert
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, func, select
 
 from database.source_response import SourceResponse
 from enums import ResponseKind, SourceName
@@ -44,3 +44,15 @@ class CRUDSourceResponse:
             .where(col(SourceResponse.body_bytes).is_not(None))
         )
         return list(self.session.exec(statement).all())
+
+    def get_count_by_source_and_kind_and_status_code(
+        self, source: SourceName, kind: ResponseKind, status_code: int
+    ) -> int:
+        statement = (
+            select(func.count())
+            .select_from(SourceResponse)
+            .where(SourceResponse.source == source)
+            .where(SourceResponse.kind == kind)
+            .where(SourceResponse.status_code == status_code)
+        )
+        return self.session.exec(statement).one()
