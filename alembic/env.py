@@ -6,6 +6,8 @@ import sqlmodel.sql.sqltypes
 from sqlalchemy import create_engine
 from sqlmodel import SQLModel
 
+import database.act_history_entry  # noqa: F401
+import database.bill  # noqa: F401
 import database.harvest_run  # noqa: F401
 import database.legislation  # noqa: F401
 import database.source  # noqa: F401
