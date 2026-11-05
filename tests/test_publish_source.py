@@ -89,7 +89,10 @@ def test_publishing_elitigation_sets_published_with_the_reason(
     published_after = datetime.now(timezone.utc)
 
     publish_source(
-        SourceName.ELITIGATION, _PUBLISH_REASON, is_withdrawal=False, is_commit=True
+        SourceName.ELITIGATION,
+        _PUBLISH_REASON,
+        publish_status=PublishStatus.PUBLISHED,
+        is_commit=True,
     )
 
     stored_source = _get_stored_source(scratch_engine, SourceName.ELITIGATION)
@@ -105,7 +108,12 @@ def test_withdrawing_sso_sets_unpublished(
 ) -> None:
     seed_sources(scratch_session)
 
-    publish_source(SourceName.SSO, _WITHDRAW_REASON, is_withdrawal=True, is_commit=True)
+    publish_source(
+        SourceName.SSO,
+        _WITHDRAW_REASON,
+        publish_status=PublishStatus.UNPUBLISHED,
+        is_commit=True,
+    )
 
     stored_source = _get_stored_source(scratch_engine, SourceName.SSO)
     assert stored_source.publish_status == PublishStatus.UNPUBLISHED
@@ -119,7 +127,10 @@ def test_publishing_a_published_source_is_refused(
 
     with pytest.raises(OpenSgLawSourceStateError, match="SSO is already PUBLISHED"):
         publish_source(
-            SourceName.SSO, _PUBLISH_REASON, is_withdrawal=False, is_commit=True
+            SourceName.SSO,
+            _PUBLISH_REASON,
+            publish_status=PublishStatus.PUBLISHED,
+            is_commit=True,
         )
 
     stored_source = _get_stored_source(scratch_engine, SourceName.SSO)
@@ -132,7 +143,9 @@ def test_a_blank_reason_is_refused_as_a_reason_error(
     seed_sources(scratch_session)
 
     with pytest.raises(OpenSgLawReasonError, match="needs a reason"):
-        publish_source(SourceName.SSO, " ", is_withdrawal=False, is_commit=True)
+        publish_source(
+            SourceName.SSO, " ", publish_status=PublishStatus.PUBLISHED, is_commit=True
+        )
 
     assert (
         _get_stored_source(scratch_engine, SourceName.SSO).publish_status
@@ -146,7 +159,10 @@ def test_dry_run_writes_nothing(
     seed_sources(scratch_session)
 
     publish_source(
-        SourceName.ELITIGATION, _PUBLISH_REASON, is_withdrawal=False, is_commit=False
+        SourceName.ELITIGATION,
+        _PUBLISH_REASON,
+        publish_status=PublishStatus.PUBLISHED,
+        is_commit=False,
     )
 
     stored_source = _get_stored_source(scratch_engine, SourceName.ELITIGATION)
@@ -173,7 +189,7 @@ def test_commit_refuses_the_protected_port_before_any_change(
         publish_source(
             SourceName.ELITIGATION,
             _PUBLISH_REASON,
-            is_withdrawal=False,
+            publish_status=PublishStatus.PUBLISHED,
             is_commit=True,
         )
 
@@ -192,7 +208,10 @@ def test_publishing_grants_exactly_the_tables_of_the_published_sources(
     seed_sources(scratch_session)
 
     publish_source(
-        SourceName.ELITIGATION, _PUBLISH_REASON, is_withdrawal=False, is_commit=True
+        SourceName.ELITIGATION,
+        _PUBLISH_REASON,
+        publish_status=PublishStatus.PUBLISHED,
+        is_commit=True,
     )
 
     for table in SQLModel.metadata.sorted_tables:
@@ -212,7 +231,12 @@ def test_withdrawing_sso_revokes_its_tables_in_the_same_commit(
     seed_sources(scratch_session)
     _grant_site_role(scratch_engine, site_role_schema, sorted(TABLE_NAME_TO_SOURCES))
 
-    publish_source(SourceName.SSO, _WITHDRAW_REASON, is_withdrawal=True, is_commit=True)
+    publish_source(
+        SourceName.SSO,
+        _WITHDRAW_REASON,
+        publish_status=PublishStatus.UNPUBLISHED,
+        is_commit=True,
+    )
 
     assert (
         _get_stored_source(scratch_engine, SourceName.SSO).publish_status
@@ -238,7 +262,10 @@ def test_publishing_elitigation_changes_no_grant(
     _grant_site_role(scratch_engine, site_role_schema, sorted(TABLE_NAME_TO_SOURCES))
 
     publish_source(
-        SourceName.ELITIGATION, _PUBLISH_REASON, is_withdrawal=False, is_commit=True
+        SourceName.ELITIGATION,
+        _PUBLISH_REASON,
+        publish_status=PublishStatus.PUBLISHED,
+        is_commit=True,
     )
 
     assert not any(
@@ -259,7 +286,10 @@ def test_dry_run_logs_the_grant_changes_and_makes_none(
     _grant_site_role(scratch_engine, site_role_schema, sorted(TABLE_NAME_TO_SOURCES))
 
     publish_source(
-        SourceName.SSO, _WITHDRAW_REASON, is_withdrawal=True, is_commit=False
+        SourceName.SSO,
+        _WITHDRAW_REASON,
+        publish_status=PublishStatus.UNPUBLISHED,
+        is_commit=False,
     )
 
     for table_name in _SSO_TABLE_NAMES:
@@ -289,7 +319,7 @@ def test_a_failed_grant_leaves_the_status_unchanged(
         publish_source(
             SourceName.ELITIGATION,
             _PUBLISH_REASON,
-            is_withdrawal=False,
+            publish_status=PublishStatus.PUBLISHED,
             is_commit=True,
         )
 

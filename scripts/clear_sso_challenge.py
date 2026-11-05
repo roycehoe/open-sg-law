@@ -7,22 +7,16 @@ from crud.source import CRUDSource
 from database.init import engine
 from database.source import Source
 from enums import SourceName, SsoAccessState
-from exceptions import (
-    OpenSgLawReasonError,
-    OpenSgLawSourceRowError,
-    OpenSgLawSourceStateError,
-)
+from exceptions import OpenSgLawSourceRowError, OpenSgLawSourceStateError
 from logs import logger
 from populate.written_tables import vacuum_analyze_written_tables
 from settings import settings
+from utils.reason import validate_can_record_reason
 from utils.write_target import validate_can_write
 
 
 def clear_sso_challenge(reason: str, is_commit: bool) -> None:
-    if not reason.strip():
-        raise OpenSgLawReasonError(
-            "A clear needs a reason, such as the date of AGC's reply"
-        )
+    validate_can_record_reason(reason, "A clear", "the date of AGC's reply")
     if is_commit:
         validate_can_write(settings.database_url)
     with Session(engine) as session:

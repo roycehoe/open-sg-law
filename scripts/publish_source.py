@@ -9,15 +9,12 @@ from crud.source_grant import CRUDSourceGrant
 from database.init import engine
 from database.source import Source
 from enums import PublishStatus, SourceName
-from exceptions import (
-    OpenSgLawReasonError,
-    OpenSgLawSourceRowError,
-    OpenSgLawSourceStateError,
-)
+from exceptions import OpenSgLawSourceRowError, OpenSgLawSourceStateError
 from logs import logger
 from populate.written_tables import vacuum_analyze_written_tables
 from services.source_grants import SITE_ROLE_NAME, get_table_names_to_grant
 from settings import settings
+from utils.reason import validate_can_record_reason
 from utils.write_target import validate_can_write
 
 _SELECT_PRIVILEGE = "SELECT"
@@ -25,7 +22,7 @@ _PUBLIC_SCHEMA = "public"
 
 
 @dataclass(frozen=True)
-class SiteGrantChange:
+class _SiteGrantChange:
     table_names_to_grant: list[str]
     table_names_to_revoke: list[str]
 
@@ -49,14 +46,14 @@ def _get_published_sources(
 
 def _get_site_grant_change(
     session: Session, published_sources: frozenset[SourceName]
-) -> SiteGrantChange:
+) -> _SiteGrantChange:
     table_names_to_grant = get_table_names_to_grant(published_sources)
     granted_table_names = CRUDSourceGrant(
         session
     ).get_table_names_by_grantee_and_privilege_type_and_table_schema(
         SITE_ROLE_NAME, _SELECT_PRIVILEGE, _PUBLIC_SCHEMA
     )
-    return SiteGrantChange(
+    return _SiteGrantChange(
         table_names_to_grant=[
             table_name
             for table_name in table_names_to_grant
@@ -70,14 +67,14 @@ def _get_site_grant_change(
     )
 
 
-def _log_site_grant_change(site_grant_change: SiteGrantChange) -> None:
+def _log_site_grant_change(site_grant_change: _SiteGrantChange) -> None:
     for table_name in site_grant_change.table_names_to_grant:
         logger.info(f"Would grant SELECT on {table_name} to {SITE_ROLE_NAME}")
     for table_name in site_grant_change.table_names_to_revoke:
         logger.info(f"Would revoke SELECT on {table_name} from {SITE_ROLE_NAME}")
 
 
-def _sync_site_grants(session: Session, site_grant_change: SiteGrantChange) -> None:
+def _sync_site_grants(session: Session, site_grant_change: _SiteGrantChange) -> None:
     for table_name in site_grant_change.table_names_to_grant:
         CRUDSourceGrant(session).grant_select(
             _PUBLIC_SCHEMA, table_name, SITE_ROLE_NAME
@@ -91,20 +88,24 @@ def _sync_site_grants(session: Session, site_grant_change: SiteGrantChange) -> N
 
 
 def publish_source(
-    source_name: SourceName, reason: str, is_withdrawal: bool, is_commit: bool
+    source_name: SourceName,
+    reason: str,
+    publish_status: PublishStatus,
+    is_commit: bool,
 ) -> None:
-    if not reason.strip():
-        raise OpenSgLawReasonError(
-            "A change of publish status needs a reason, such as the date of the permission letter or why it is withdrawn"
-        )
+    validate_can_record_reason(
+        reason,
+        "A change of publish status",
+        "the date of the permission letter or why it is withdrawn",
+    )
     if is_commit:
         validate_can_write(settings.database_url)
-    publish_status = (
-        PublishStatus.UNPUBLISHED if is_withdrawal else PublishStatus.PUBLISHED
-    )
     with Session(engine) as session:
         sources = CRUDSource(session).get_all_for_update()
-        source = CRUDSource(session).get_by_name_for_update(source_name)
+        source_name_to_source = {
+            SourceName(stored_source.name): stored_source for stored_source in sources
+        }
+        source = source_name_to_source.get(source_name)
         if source is None:
             raise OpenSgLawSourceRowError(
                 f"The {source_name.value} source row is missing"
@@ -166,6 +167,6 @@ if __name__ == "__main__":
     publish_source(
         SourceName(arguments.source),
         arguments.reason,
-        arguments.withdraw,
+        PublishStatus.UNPUBLISHED if arguments.withdraw else PublishStatus.PUBLISHED,
         arguments.commit,
     )
