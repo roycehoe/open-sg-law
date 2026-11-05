@@ -1,6 +1,3 @@
-from collections.abc import Iterator
-
-import pytest
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel
 
@@ -12,22 +9,11 @@ from services.source_grants import (
     get_table_names_to_grant,
 )
 from tests.site_role_seed import (
-    create_site_role,
-    get_test_schema,
     has_site_role_select,
     load_site_role_migration,
-    revoke_site_role_grants,
 )
 
 _SELECT_PRIVILEGE = "SELECT"
-
-
-@pytest.fixture
-def site_role_schema(scratch_engine: Engine) -> Iterator[str]:
-    create_site_role(scratch_engine)
-    schema = get_test_schema(scratch_engine)
-    yield schema
-    revoke_site_role_grants(scratch_engine, schema)
 
 
 def test_every_table_is_granted_while_every_source_but_elitigation_is_published() -> (

@@ -41,6 +41,11 @@ import database.legislation_version  # noqa: F401 registers the table for create
 import database.source  # noqa: F401 registers the table for create_all
 import database.source_response  # noqa: F401 registers the table for create_all
 from settings import settings
+from tests.site_role_seed import (
+    create_site_role,
+    get_test_schema,
+    revoke_site_role_grants,
+)
 
 _LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 _SCRATCH_PORT = 5436
@@ -180,3 +185,11 @@ def scratch_session(scratch_engine: Engine) -> Iterator[Session]:
             f'"{schema}"."{table.name}"' for table in SQLModel.metadata.sorted_tables
         )
         connection.execute(text(f"TRUNCATE {table_names} RESTART IDENTITY CASCADE"))
+
+
+@pytest.fixture
+def site_role_schema(scratch_engine: Engine) -> Iterator[str]:
+    create_site_role(scratch_engine)
+    schema = get_test_schema(scratch_engine)
+    yield schema
+    revoke_site_role_grants(scratch_engine, schema)

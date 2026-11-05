@@ -1,4 +1,3 @@
-from collections.abc import Iterator
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
@@ -18,10 +17,7 @@ from exceptions import (
 from scripts.publish_source import publish_source
 from services.source_grants import SITE_ROLE_NAME, TABLE_NAME_TO_SOURCES
 from tests.site_role_seed import (
-    create_site_role,
-    get_test_schema,
     has_site_role_select,
-    revoke_site_role_grants,
 )
 from tests.source_seed import get_stored_source, seed_sources
 
@@ -45,14 +41,6 @@ class _LogRecorder:
 
     def info(self, message: str) -> None:
         self.messages.append(message)
-
-
-@pytest.fixture
-def site_role_schema(scratch_engine: Engine) -> Iterator[str]:
-    create_site_role(scratch_engine)
-    schema = get_test_schema(scratch_engine)
-    yield schema
-    revoke_site_role_grants(scratch_engine, schema)
 
 
 @pytest.fixture
