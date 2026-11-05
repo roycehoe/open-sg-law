@@ -40,9 +40,7 @@ All code follows [STYLE.md](../STYLE.md), copied from hansard-scraper with its d
 
 ## Measuring progress
 
-No run has happened yet, so there are no figures. Nothing is published.
-
-`scripts/coverage_figures.py` will log the numbers below once the first harvest has run, and `--output` will keep them in `docs/figures/`. When a figure moves, replace the current figure in the same change and keep the earlier one in a history file.
+`python -m scripts.coverage_figures` is the measure for the legislation objectives (1 and 2). It logs the numbers below, and `--output` keeps them in `docs/figures/`. No figures exist yet, because every harvest and write run is parked (`plans/open-sg-law-parked.md`), so nothing is published. When a figure moves, replace the current figure in the same change and keep the earlier one in a history file.
 
 | Figure | What it counts |
 |---|---|

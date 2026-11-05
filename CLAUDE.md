@@ -5,7 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Goal and how progress is measured
 
-The goal is in `docs/vision.md`. Its "Measuring progress" section names the figures `scripts/coverage_figures.py` will log once the first harvest has run. Read it before planning work or reporting results.
+The goal is in `docs/vision.md`. Its "Measuring progress" section names the figures `scripts/coverage_figures.py` logs. Read it before planning work or reporting results.
+
+- Run `python -m scripts.coverage_figures` before and after any change to parsing and quote its numbers.
+- Every write to `legislation_version`, `legislation_section` or the link tables ends with `python -m scripts.coverage_figures --output docs/figures/YYYY-MM-DD-<write>.txt`, and the file is committed.
+- The text share alone can rise when the parser drops a version, so quote the versions-not-parsed count beside it.
 
 ## Hard rules for agents
 
