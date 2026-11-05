@@ -9,8 +9,8 @@ import scripts.apply_legislation as apply_legislation_script
 from crud.legislation import CRUDLegislation
 from enums import SourceName
 from exceptions import OpenSgLawWriteCheckError, OpenSgLawWriteTargetError
-from populate.legislation import LegislationWrite
 from scripts.apply_legislation import apply_legislation
+from services.legislation import LegislationWrite
 from tests.listing_seed import seed_listing
 from tests.source_seed import seed_sources
 

@@ -7,12 +7,9 @@ from database.init import engine
 from database.legislation import Legislation
 from exceptions import OpenSgLawWriteCheckError
 from logs import logger
-from populate.legislation import (
-    LegislationWrite,
-    get_legislation_write,
-    write_legislation,
-)
+from populate.legislation import get_legislation_write, write_legislation
 from populate.written_tables import vacuum_analyze_written_tables
+from services.legislation import LegislationWrite
 from settings import settings
 from utils.write_target import validate_can_write
 

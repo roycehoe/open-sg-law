@@ -2,10 +2,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from crud.legislation import LegislationRow
 from crud.source_response import ListingPageRow
+from database.legislation import Legislation
 from enums import SourceName
 from exceptions import OpenSgLawListingParseError
 from utils.archive_capture_url import get_archive_capture, get_capture_time
+from utils.legislation_update import LegislationUpdate
 from utils.sso_listing import (
     SsoListingRow,
     get_sso_listing_page,
@@ -32,6 +35,14 @@ class PlannedLegislation:
     title: str
     is_in_newest_listing: bool
     listing_source: SourceName
+
+
+@dataclass(frozen=True)
+class LegislationWrite:
+    legislations_to_insert: list[Legislation]
+    legislation_updates: list[LegislationUpdate]
+    unchanged_count: int
+    incomplete_harvest_run_ids: list[int]
 
 
 @dataclass(frozen=True)
@@ -127,4 +138,50 @@ def build_planned_legislation(listings: list[Listing]) -> list[PlannedLegislatio
     return sorted(
         sso_code_to_planned_legislation.values(),
         key=lambda planned_legislation: planned_legislation.sso_code,
+    )
+
+
+def build_legislation_write(
+    listings: Listings, legislation_rows: list[LegislationRow]
+) -> LegislationWrite:
+    sso_code_to_legislation_row = {
+        legislation_row.sso_code: legislation_row
+        for legislation_row in legislation_rows
+    }
+    legislations_to_insert: list[Legislation] = []
+    legislation_updates: list[LegislationUpdate] = []
+    unchanged_count = 0
+    for planned_legislation in build_planned_legislation(listings.listings):
+        legislation_row = sso_code_to_legislation_row.get(planned_legislation.sso_code)
+        if legislation_row is None:
+            legislations_to_insert.append(
+                Legislation(
+                    sso_code=planned_legislation.sso_code,
+                    title=planned_legislation.title,
+                    is_in_newest_listing=planned_legislation.is_in_newest_listing,
+                    listing_source=planned_legislation.listing_source,
+                )
+            )
+            continue
+        if (
+            legislation_row.title != planned_legislation.title
+            or legislation_row.is_in_newest_listing
+            != planned_legislation.is_in_newest_listing
+            or legislation_row.listing_source != planned_legislation.listing_source
+        ):
+            legislation_updates.append(
+                LegislationUpdate(
+                    id=legislation_row.id,
+                    title=planned_legislation.title,
+                    is_in_newest_listing=planned_legislation.is_in_newest_listing,
+                    listing_source=planned_legislation.listing_source,
+                )
+            )
+            continue
+        unchanged_count += 1
+    return LegislationWrite(
+        legislations_to_insert=legislations_to_insert,
+        legislation_updates=legislation_updates,
+        unchanged_count=unchanged_count,
+        incomplete_harvest_run_ids=listings.incomplete_harvest_run_ids,
     )
