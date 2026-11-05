@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "open-sg-law"
+version = "0.1.0"
+description = "Scraper and database for Singapore legislation, judgments and links to Hansard debates"
+authors = ["roycehoe"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.32.5"
+sqlmodel = "^0.0.24"
+psycopg2 = "^2.9.10"
+pydantic-settings = "^2.14.1"
+loguru = "^0.7.3"
+alembic = "^1.13"
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.12.10"
+pytest = "^9.1.1"
+basedpyright = "1.40.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.lint]
+select = [
+    "I", "F",
+    "ANN",
+    "RET504", "RET505", "RET506", "RET507", "RET508",
+    "BLE001",
+    "PLR2004",
+    "T201", "T203",
+    "DTZ003", "DTZ005",
+    "PLW0603",
+]
+ignore = ["ANN204"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.basedpyright]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+exclude = ["plans", "**/node_modules", "**/__pycache__", "**/.*"]
