@@ -3,14 +3,21 @@ from dataclasses import dataclass
 import pytest
 import requests
 
-from exceptions import OpenSgLawGatewayError
+from exceptions import OpenSgLawError, OpenSgLawGatewayError
 from gateway.elitigation import (
     get_elitigation_judgment_response,
     get_elitigation_listing_response,
 )
-from gateway.http import CRAWL_USER_AGENT, ELITIGATION_PACER
+from gateway.http import CRAWL_USER_AGENT, ELITIGATION_PACER, SSO_PACER
+from gateway.sso import (
+    build_sso_listing_url,
+    get_sso_document_response,
+    get_sso_listing_response,
+    get_sso_robots_response,
+)
 
 _HTTP_OK = 200
+_HTTP_SERVER_ERROR = 500
 _BODY = b"<html><body>Total Judgment(s) Found : 1</body></html>"
 _COURT_FILTER = "SUPCT"
 _YEAR = 2024
@@ -18,6 +25,10 @@ _PAGE_NUMBER = 2
 _LISTING_QUERY = "Filter=SUPCT&YearOfDecision=2024&SortBy=Score&CurrentPage=2"
 _JUDGMENT_URL = "https://www.elitigation.sg/gd/s/2024_SGHC_1"
 _ELITIGATION_REQUEST_COUNT = 2
+_SSO_DOCUMENT_PATH = "/Act/AA2004?ViewType=Pdf&_=20240702194429"
+_SSO_LISTING_PAGE_INDEX = 1
+_VALIDATED = "validated"
+_SENT = "sent"
 
 
 @dataclass(frozen=True)
@@ -32,6 +43,13 @@ def _build_response(url: str, status_code: int, body: bytes) -> requests.Respons
     response.url = url
     response._content = body
     return response
+
+
+@dataclass(frozen=True)
+class _RecordedSsoRequest:
+    url: str
+    headers: dict
+    is_redirect_allowed: object
 
 
 @pytest.fixture
@@ -82,3 +100,77 @@ def test_an_elitigation_transport_error_is_a_gateway_error(
 
     with pytest.raises(OpenSgLawGatewayError, match="eLitigation request failed"):
         get_elitigation_judgment_response(_JUDGMENT_URL)
+
+
+def test_sso_gateways_send_the_user_agent_once_without_redirects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    recorded_requests: list[_RecordedSsoRequest] = []
+    monkeypatch.setattr(SSO_PACER, "sleep", lambda seconds: None)
+
+    def fake_get(url: str, headers: dict, **kwargs: object) -> requests.Response:
+        events.append(_SENT)
+        recorded_requests.append(
+            _RecordedSsoRequest(url, headers, kwargs["allow_redirects"])
+        )
+        return _build_response(url, _HTTP_SERVER_ERROR, b"")
+
+    def validate_can_send() -> None:
+        events.append(_VALIDATED)
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    robots_response = get_sso_robots_response(validate_can_send)
+    listing_response = get_sso_listing_response(
+        _SSO_LISTING_PAGE_INDEX, validate_can_send
+    )
+    document_response = get_sso_document_response(_SSO_DOCUMENT_PATH, validate_can_send)
+
+    assert events == [_VALIDATED, _SENT] * 3
+    assert [recorded_request.url for recorded_request in recorded_requests] == [
+        "https://sso.agc.gov.sg/robots.txt",
+        build_sso_listing_url(_SSO_LISTING_PAGE_INDEX),
+        f"https://sso.agc.gov.sg{_SSO_DOCUMENT_PATH}",
+    ]
+    assert all(
+        recorded_request.headers == {"User-Agent": CRAWL_USER_AGENT}
+        for recorded_request in recorded_requests
+    )
+    assert all(
+        recorded_request.is_redirect_allowed is False
+        for recorded_request in recorded_requests
+    )
+    assert robots_response.status_code == _HTTP_SERVER_ERROR
+    assert listing_response.status_code == _HTTP_SERVER_ERROR
+    assert document_response.status_code == _HTTP_SERVER_ERROR
+
+
+def test_an_sso_request_refused_before_sending_never_reaches_the_network(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sent_urls: list[str] = []
+    monkeypatch.setattr(SSO_PACER, "sleep", lambda seconds: None)
+
+    def fake_get(url: str, headers: dict, **kwargs: object) -> requests.Response:
+        sent_urls.append(url)
+        return _build_response(url, _HTTP_OK, b"")
+
+    def validate_can_send() -> None:
+        raise OpenSgLawError("The window is closed")
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    with pytest.raises(OpenSgLawError, match="window is closed"):
+        get_sso_robots_response(validate_can_send)
+
+    assert sent_urls == []
+
+
+def test_the_sso_listing_urls_are_zero_based_after_the_first_page() -> None:
+    assert build_sso_listing_url(0) == (
+        "https://sso.agc.gov.sg/Browse/Act/Current/All?PageSize=500"
+    )
+    assert build_sso_listing_url(1) == (
+        "https://sso.agc.gov.sg/Browse/Act/Current/All/1?PageSize=500&SortBy=Title&SortOrder=ASC"
+    )

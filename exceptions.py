@@ -32,3 +32,7 @@ class OpenSgLawSourceRowError(OpenSgLawError):
 
 class OpenSgLawGatewayError(OpenSgLawError):
     pass
+
+
+class OpenSgLawSsoChallengeError(OpenSgLawError):
+    pass

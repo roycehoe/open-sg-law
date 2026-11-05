@@ -33,3 +33,8 @@ class ResponseKind(StrEnum):
     DOCUMENT = "DOCUMENT"
     CDX_ANSWER = "CDX_ANSWER"
     ROBOTS_FILE = "ROBOTS_FILE"
+
+
+class SsoAnswer(StrEnum):
+    EXPECTED = "EXPECTED"
+    FAILURE = "FAILURE"
