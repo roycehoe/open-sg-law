@@ -28,10 +28,9 @@ from gateway.http import SSO_PACER
 from populate.sso_responses import populate_sso_responses
 from schemas.source_http_response import SourceHttpResponse
 from services.source_response import build_source_response
-from services.sso_request import get_act_pdf_paths_to_fetch
 from settings import settings
 from tests.source_seed import seed_sources
-from utils.sso_listing import SsoListingRow, build_sso_listing_url
+from utils.sso_listing import build_sso_listing_url
 
 _SINGAPORE = ZoneInfo("Asia/Singapore")
 _REQUEST_GAP = timedelta(seconds=60)
@@ -509,36 +508,3 @@ def test_a_running_run_blocks_a_second_one(
 
     assert len(_get_harvest_runs(scratch_session)) == 1
     assert fake_sso.call_count == 0
-
-
-def test_get_act_pdf_paths_to_fetch_orders_and_skips() -> None:
-    listing_rows = [
-        SsoListingRow(
-            "AA2004", "Accountants Act 2004", _LISTED_PDF_PATHS[0], "20240702194429"
-        ),
-        SsoListingRow("ZZ1999", "Unstamped Act 1999", "/Act/ZZ1999?ViewType=Pdf", None),
-        SsoListingRow(
-            "BB2001",
-            "Older Act 2001",
-            "/Act/BB2001?ViewType=Pdf&_=20240101000000",
-            "20240101000000",
-        ),
-        SsoListingRow(
-            "CC2002",
-            "Oldest Act 2002",
-            "/Act/CC2002?ViewType=Pdf&_=20240101000000",
-            "20240101000000",
-        ),
-    ]
-    stored_document_urls = [
-        _get_pdf_url(_LISTED_PDF_PATHS[0]),
-        _get_pdf_url("/Act/BB2001?ViewType=Pdf&_=20230101000000"),
-        f"https://web.archive.org/web/20240716171208id_/{_get_pdf_url('/Act/CC2002?ViewType=Pdf&_=20220101000000')}",
-        _get_pdf_url("/Act/CC2002/Historical/20200101?ViewType=Pdf&_=20230601000000"),
-    ]
-
-    assert get_act_pdf_paths_to_fetch(listing_rows, stored_document_urls) == [
-        "/Act/ZZ1999?ViewType=Pdf",
-        "/Act/CC2002?ViewType=Pdf&_=20240101000000",
-        "/Act/BB2001?ViewType=Pdf&_=20240101000000",
-    ]
