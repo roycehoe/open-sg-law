@@ -4,7 +4,7 @@ import pytest
 
 from enums import LegislationSectionKind
 from exceptions import OpenSgLawSectionParseError
-from services.legislation_section import get_parsed_legislation
+from services.legislation_section import ParsedSection, get_parsed_legislation
 from utils.pdf_text import PdfPage, get_pdf_pages
 
 _FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
@@ -21,6 +21,10 @@ _GAMBLING_DUTIES_ACT_FIXTURE_PAGE_COUNT = 3
 
 def _get_pages(file_name: str) -> list[PdfPage]:
     return get_pdf_pages((_FIXTURE_DIRECTORY / file_name).read_bytes())
+
+
+def _get_printed_numbers(parsed_sections: list[ParsedSection]) -> list[str]:
+    return [parsed_section.printed_number for parsed_section in parsed_sections]
 
 
 def test_the_first_section_of_the_interpretation_act_carries_its_part_and_heading() -> (
@@ -76,9 +80,7 @@ def test_a_section_quoted_by_an_amending_section_stays_in_its_text() -> None:
     )
     amending_section = parsed_legislation.sections[1]
 
-    assert [
-        parsed_section.printed_number for parsed_section in parsed_legislation.sections
-    ] == ["47", "48"]
+    assert _get_printed_numbers(parsed_legislation.sections) == ["47", "48"]
     assert amending_section.printed_number == "48"
     assert "Authorised persons" in amending_section.text
     assert "5. It is the function of the Authority" in amending_section.text
@@ -92,9 +94,7 @@ def test_a_section_quoted_across_pages_stays_in_the_amending_section() -> None:
     pdf_pages = _get_pages("GDA2022-p56-57-61.pdf")
 
     parsed_legislation = get_parsed_legislation(_GAMBLING_DUTIES_ACT_CODE, pdf_pages)
-    printed_numbers = [
-        parsed_section.printed_number for parsed_section in parsed_legislation.sections
-    ]
+    printed_numbers = _get_printed_numbers(parsed_legislation.sections)
     amending_section = parsed_legislation.sections[1]
 
     assert printed_numbers == ["47", "48", "49"]
@@ -169,9 +169,7 @@ def test_the_arrangement_list_and_cover_are_front_matter_and_start_no_section() 
     parsed_legislation = get_parsed_legislation(_INTERPRETATION_ACT_CODE, pdf_pages)
     first_section = parsed_legislation.sections[0]
 
-    assert [
-        parsed_section.printed_number for parsed_section in parsed_legislation.sections
-    ] == ["1"]
+    assert _get_printed_numbers(parsed_legislation.sections) == ["1"]
     assert first_section.heading == "Short title"
     assert first_section.part_heading is None
     assert first_section.division_heading is None
@@ -195,9 +193,7 @@ def test_the_legislative_history_is_left_out_of_every_section() -> None:
     parsed_legislation = get_parsed_legislation(_INTERPRETATION_ACT_CODE, pdf_pages)
     last_section = parsed_legislation.sections[-1]
 
-    assert [
-        parsed_section.printed_number for parsed_section in parsed_legislation.sections
-    ] == ["52", "53", "54", "55"]
+    assert _get_printed_numbers(parsed_legislation.sections) == ["52", "53", "54", "55"]
     assert last_section.heading == "Act to bind Government"
     assert last_section.text == "55. This Act binds the Government."
     assert all(
@@ -212,9 +208,7 @@ def test_the_articles_of_the_constitution_are_kind_article() -> None:
 
     parsed_legislation = get_parsed_legislation(_CONSTITUTION_CODE, pdf_pages)
 
-    assert [
-        parsed_section.printed_number for parsed_section in parsed_legislation.sections
-    ] == ["1", "2"]
+    assert _get_printed_numbers(parsed_legislation.sections) == ["1", "2"]
     assert all(
         parsed_section.kind == LegislationSectionKind.ARTICLE
         for parsed_section in parsed_legislation.sections
@@ -262,9 +256,7 @@ def test_the_schedule_of_an_act_is_one_row_of_kind_schedule() -> None:
         if parsed_section.kind == LegislationSectionKind.SCHEDULE
     ]
 
-    assert [parsed_section.printed_number for parsed_section in schedule_sections] == [
-        "THE SCHEDULE"
-    ]
+    assert _get_printed_numbers(schedule_sections) == ["THE SCHEDULE"]
     assert schedule_sections[0].heading is None
     assert schedule_sections[0].part_heading is None
     assert not schedule_sections[0].is_repealed
@@ -279,9 +271,7 @@ def test_the_numbered_paragraphs_of_a_schedule_start_no_section() -> None:
     pdf_pages = _get_pages("CONS1963-first-schedule.pdf")
 
     parsed_legislation = get_parsed_legislation(_CONSTITUTION_CODE, pdf_pages)
-    printed_numbers = [
-        parsed_section.printed_number for parsed_section in parsed_legislation.sections
-    ]
+    printed_numbers = _get_printed_numbers(parsed_legislation.sections)
     first_schedule = parsed_legislation.sections[-1]
 
     assert printed_numbers == ["1", "2", "FIRST SCHEDULE"]
