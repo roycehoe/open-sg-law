@@ -15,6 +15,7 @@ _SINGAPORE_TOURISM_BOARD_ACT_CODE = "STBA1963"
 _GAMBLING_DUTIES_ACT_CODE = "GDA2022"
 _GAMBLING_REGULATORY_AUTHORITY_ACT_CODE = "GRASA2022"
 _ELECTRIC_VEHICLES_CHARGING_ACT_CODE = "EVCA2022"
+_CONSUMER_PROTECTION_ACT_CODE = "CPFTA2003"
 _INTERPRETATION_ACT_FIXTURE_PAGE_COUNT = 2
 _GAMBLING_DUTIES_ACT_FIXTURE_PAGE_COUNT = 3
 
@@ -135,6 +136,24 @@ def test_a_quoted_line_with_a_closing_quote_before_any_opening_one_starts_nothin
     )
     assert parsed_legislation.sections[1].heading == (
         "Consequential amendments to Inland Revenue Authority of Singapore Act"
+    )
+
+
+def test_a_quotation_closed_by_a_modifier_letter_double_apostrophe_is_closed() -> None:
+    pdf_pages = _get_pages("CPFTA2003-second-schedule.pdf")
+
+    parsed_legislation = get_parsed_legislation(
+        _CONSUMER_PROTECTION_ACT_CODE, pdf_pages
+    )
+
+    assert _get_printed_numbers(parsed_legislation.sections) == [
+        "44",
+        "FIRST SCHEDULE",
+        "SECOND SCHEDULE",
+    ]
+    assert (
+        "“This is not a bill. You are not required to pay any money.ˮ,"
+        in parsed_legislation.sections[2].text
     )
 
 
