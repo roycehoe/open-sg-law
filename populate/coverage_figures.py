@@ -12,16 +12,7 @@ from crud.legislation_version import (
     SourceCountRow,
     VersionYearCountRow,
 )
-
-_HIGH_TEXT_SHARE = 0.99
-_LOW_TEXT_SHARE = 0.9
-_LOWEST_TEXT_SHARE_COUNT = 5
-
-
-@dataclass(frozen=True)
-class VersionTextShare:
-    sso_code: str
-    text_share: float
+from services.coverage_figures import VersionTextShare, build_text_share_figures
 
 
 @dataclass(frozen=True)
@@ -52,24 +43,7 @@ def get_coverage_figures(session: Session) -> CoverageFigures:
     newest_version_year_counts = CRUDLegislationVersion(
         session
     ).get_version_year_counts_by_is_newest(True)
-    body_character_count = sum(
-        character_count_row.body_character_count
-        for character_count_row in character_count_rows
-    )
-    version_text_shares = sorted(
-        (
-            VersionTextShare(
-                sso_code=character_count_row.sso_code,
-                text_share=character_count_row.section_character_count
-                / character_count_row.body_character_count,
-            )
-            for character_count_row in character_count_rows
-        ),
-        key=lambda version_text_share: (
-            version_text_share.text_share,
-            version_text_share.sso_code,
-        ),
-    )
+    text_share_figures = build_text_share_figures(character_count_rows)
     return CoverageFigures(
         legislation_count=CRUDLegislation(session).get_count(),
         legislation_without_version_count=CRUDLegislation(
@@ -99,24 +73,10 @@ def get_coverage_figures(session: Session) -> CoverageFigures:
         image_page_section_count=CRUDLegislationSection(
             session
         ).get_count_by_is_on_image_page(True),
-        overall_text_share=(
-            None
-            if body_character_count == 0
-            else sum(
-                character_count_row.section_character_count
-                for character_count_row in character_count_rows
-            )
-            / body_character_count
-        ),
-        versions_under_high_share_count=sum(
-            version_text_share.text_share < _HIGH_TEXT_SHARE
-            for version_text_share in version_text_shares
-        ),
-        versions_under_low_share_count=sum(
-            version_text_share.text_share < _LOW_TEXT_SHARE
-            for version_text_share in version_text_shares
-        ),
-        lowest_text_shares=version_text_shares[:_LOWEST_TEXT_SHARE_COUNT],
+        overall_text_share=text_share_figures.overall_text_share,
+        versions_under_high_share_count=text_share_figures.versions_under_high_share_count,
+        versions_under_low_share_count=text_share_figures.versions_under_low_share_count,
+        lowest_text_shares=text_share_figures.lowest_text_shares,
         bill_count=CRUDBill(session).get_count(),
         history_entry_count=CRUDActHistoryEntry(session).get_count(),
         linked_history_entry_count=CRUDActHistoryEntry(

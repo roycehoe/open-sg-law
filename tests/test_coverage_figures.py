@@ -15,8 +15,9 @@ from database.bill import Bill
 from database.legislation_section import LegislationSection
 from enums import ActHistoryEntryKind, BillLinkSource, LegislationSectionKind
 from exceptions import OpenSgLawWriteCheckError
-from populate.coverage_figures import VersionTextShare, get_coverage_figures
+from populate.coverage_figures import get_coverage_figures
 from scripts.coverage_figures import coverage_figures
+from services.coverage_figures import VersionTextShare
 from tests.document_seed import seed_ia1965_version, seed_legislation
 from tests.source_seed import seed_sources
 from utils.legislation_version_update import LegislationVersionNewestUpdate
