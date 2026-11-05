@@ -1,6 +1,7 @@
 from typing import Optional
 
-from sqlalchemy import CheckConstraint, Column, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, Computed, Index, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlmodel import Field, SQLModel
 
 import database.legislation_version  # noqa: F401 registers LegislationVersion so the foreign key resolves
@@ -23,6 +24,11 @@ class LegislationSection(SQLModel, table=True):
             + ")",
             name="ck_legislation_section_kind",
         ),
+        Index(
+            "ix_legislation_section_search_vector",
+            "search_vector",
+            postgresql_using="gin",
+        ),
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -41,6 +47,16 @@ class LegislationSection(SQLModel, table=True):
     last_page_number: int
     sso_anchor: Optional[str] = Field(
         default=None, sa_column=Column(Text, nullable=True)
+    )
+    search_vector: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            TSVECTOR,
+            Computed(
+                """to_tsvector('english'::regconfig, coalesce(heading, '') || ' ' || "text")""",
+                persisted=True,
+            ),
+        ),
     )
 
     kind: LegislationSectionKind = Field(sa_column=Column(Text, nullable=False))
