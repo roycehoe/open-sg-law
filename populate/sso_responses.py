@@ -54,6 +54,7 @@ from services.sso_request import (
     get_act_pdf_paths_to_fetch,
     validate_can_send_sso_request,
 )
+from utils.sso_listing import SsoListingRow
 
 _HTTP_OK = 200
 _FIRST_EXPECTED_ANSWER_REASON = "First expected answer"
@@ -117,16 +118,13 @@ def _store_response(
     CRUDHarvestRun(session).update(harvest_run)
 
 
-def _send_sso_request(
+def _send_and_store_request(
     session: Session,
     harvest_run: HarvestRun,
     harvest_run_id: int,
-    source: Source,
     night_progress: _NightProgress,
     send_request: Callable[[], SourceHttpResponse],
     kind: ResponseKind,
-    is_expected_body: Callable[[SourceHttpResponse], bool],
-    now: Callable[[], datetime],
 ) -> Optional[SourceHttpResponse]:
     try:
         source_http_response = send_request()
@@ -139,6 +137,37 @@ def _send_sso_request(
         f" {len(source_http_response.body):,} bytes to {source_http_response.requested_url}"
     )
     _store_response(session, harvest_run, harvest_run_id, source_http_response, kind)
+    return source_http_response
+
+
+def _mark_source_serving(
+    session: Session, source: Source, clock: Callable[[], datetime]
+) -> None:
+    if source.sso_access_state != SsoAccessState.UNTESTED:
+        return
+    source.sso_access_state = SsoAccessState.SERVING
+    source.sso_access_state_reason = _FIRST_EXPECTED_ANSWER_REASON
+    source.sso_access_state_changed_at = clock()
+    CRUDSource(session).update(source)
+    session.commit()
+
+
+def _send_sso_request(
+    session: Session,
+    harvest_run: HarvestRun,
+    harvest_run_id: int,
+    source: Source,
+    night_progress: _NightProgress,
+    send_request: Callable[[], SourceHttpResponse],
+    kind: ResponseKind,
+    is_expected_body: Callable[[SourceHttpResponse], bool],
+    clock: Callable[[], datetime],
+) -> Optional[SourceHttpResponse]:
+    source_http_response = _send_and_store_request(
+        session, harvest_run, harvest_run_id, night_progress, send_request, kind
+    )
+    if source_http_response is None:
+        return None
     sso_answer = get_sso_answer(
         source_http_response, is_expected_body(source_http_response)
     )
@@ -147,51 +176,37 @@ def _send_sso_request(
         _validate_can_store_more(session)
         return None
     night_progress.consecutive_failure_count = 0
-    if source.sso_access_state == SsoAccessState.UNTESTED:
-        source.sso_access_state = SsoAccessState.SERVING
-        source.sso_access_state_reason = _FIRST_EXPECTED_ANSWER_REASON
-        source.sso_access_state_changed_at = now()
-        CRUDSource(session).update(source)
-        session.commit()
+    _mark_source_serving(session, source, clock)
     _validate_can_store_more(session)
     return source_http_response
 
 
-def _send_night_requests(
+def _fetch_listing_rows(
     session: Session,
     harvest_run: HarvestRun,
     harvest_run_id: int,
     source: Source,
+    night_progress: _NightProgress,
+    validate_can_send: Callable[[], None],
     clock: Callable[[], datetime],
-) -> None:
-    night_progress = _NightProgress()
-    validate_can_send = lambda: validate_can_send_sso_request(
-        clock(), source.sso_access_state
-    )
-    _send_sso_request(
-        session,
-        harvest_run,
-        harvest_run_id,
-        source,
-        night_progress,
-        partial(get_sso_robots_response, validate_can_send),
-        ResponseKind.ROBOTS_FILE,
-        is_sso_robots_file,
-        clock,
-    )
+) -> Optional[list[SsoListingRow]]:
     first_listing_response = _send_sso_request(
         session,
         harvest_run,
         harvest_run_id,
         source,
         night_progress,
-        partial(get_sso_listing_response, 0, validate_can_send),
+        partial(
+            get_sso_listing_response,
+            page_index=0,
+            validate_can_send=validate_can_send,
+        ),
         ResponseKind.LISTING_PAGE,
         is_sso_listing_page,
         clock,
     )
     if first_listing_response is None:
-        return
+        return None
     first_listing_page = get_sso_listing_page_of_response(first_listing_response)
     listing_rows = list(first_listing_page.rows)
     for page_index in range(1, first_listing_page.page_count):
@@ -209,6 +224,19 @@ def _send_night_requests(
         if listing_response is None:
             continue
         listing_rows.extend(get_sso_listing_page_of_response(listing_response).rows)
+    return listing_rows
+
+
+def _fetch_documents(
+    session: Session,
+    harvest_run: HarvestRun,
+    harvest_run_id: int,
+    source: Source,
+    night_progress: _NightProgress,
+    validate_can_send: Callable[[], None],
+    clock: Callable[[], datetime],
+    listing_rows: list[SsoListingRow],
+) -> None:
     stored_document_urls = [
         *CRUDSourceResponse(
             session
@@ -233,6 +261,51 @@ def _send_night_requests(
             is_sso_pdf,
             clock,
         )
+
+
+def _send_night_requests(
+    session: Session,
+    harvest_run: HarvestRun,
+    harvest_run_id: int,
+    source: Source,
+    clock: Callable[[], datetime],
+) -> None:
+    night_progress = _NightProgress()
+    validate_can_send = lambda: validate_can_send_sso_request(
+        clock(), source.sso_access_state
+    )
+    _send_sso_request(
+        session,
+        harvest_run,
+        harvest_run_id,
+        source,
+        night_progress,
+        partial(get_sso_robots_response, validate_can_send),
+        ResponseKind.ROBOTS_FILE,
+        is_sso_robots_file,
+        clock,
+    )
+    listing_rows = _fetch_listing_rows(
+        session,
+        harvest_run,
+        harvest_run_id,
+        source,
+        night_progress,
+        validate_can_send,
+        clock,
+    )
+    if listing_rows is None:
+        return
+    _fetch_documents(
+        session,
+        harvest_run,
+        harvest_run_id,
+        source,
+        night_progress,
+        validate_can_send,
+        clock,
+        listing_rows,
+    )
 
 
 def populate_sso_responses(
