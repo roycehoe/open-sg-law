@@ -4,7 +4,6 @@ from crud.vacuum import CRUDVacuum
 from exceptions import OpenSgLawWriteCheckError
 
 
-# NOTE: call this after the script's own commit; VACUUM cannot run inside a transaction
 def vacuum_analyze_written_tables(session: Session, table_names: list[str]) -> None:
     table_name_to_vacuum_count = {
         table_name: CRUDVacuum(session).get_vacuum_count(table_name)
