@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_USER: "user"
+      POSTGRES_PASSWORD: "password"
+      POSTGRES_DB: "open_sg_law"
+    ports:
+      - "127.0.0.1:5436:5432"
+    volumes:
+      - open_sg_law_pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  open_sg_law_pgdata:
