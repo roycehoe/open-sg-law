@@ -1,7 +1,6 @@
 import argparse
 from datetime import datetime, timezone
 from functools import partial
-from zoneinfo import ZoneInfo
 
 from sqlmodel import Session
 
@@ -16,10 +15,10 @@ from exceptions import OpenSgLawSourceRowError
 from logs import logger
 from populate.sso_responses import populate_sso_responses
 from populate.written_tables import vacuum_analyze_written_tables
+from services.sso_request import get_sso_window_status, get_sso_window_text
 from settings import settings
 from utils.write_target import validate_can_write
 
-_SINGAPORE = ZoneInfo("Asia/Singapore")
 _HTTP_OK = 200
 
 
@@ -37,9 +36,7 @@ def harvest_sso(is_commit: bool) -> None:
             logger.info(
                 f"SSO is {source.sso_access_state}: {source.sso_access_state_reason}"
             )
-            logger.info(
-                f"It is {datetime.now(_SINGAPORE):%H:%M} SGT; requests go only from 03:00 to 06:55 SGT"
-            )
+            logger.info(get_sso_window_status(datetime.now(timezone.utc)))
             logger.info(f"{len(stored_pdf_urls):,} SSO PDFs are stored")
         logger.info("Dry run: nothing written")
         return
@@ -71,7 +68,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--commit",
         action="store_true",
-        help="send SSO requests now; refused outside 03:00 to 06:55 SGT",
+        help=f"send SSO requests now; refused outside {get_sso_window_text()}",
     )
     arguments = parser.parse_args()
     harvest_sso(arguments.commit)

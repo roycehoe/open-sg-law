@@ -5,7 +5,8 @@ from exceptions import OpenSgLawHarvestHaltError, OpenSgLawHarvestRunError
 
 _STALE_RUN_HOURS = 12
 _MAX_CONSECUTIVE_FAILURES = 3
-_MAX_DATABASE_BYTES = 10 * 1_024**3
+_MAX_DATABASE_GIGABYTES = 10
+_MAX_DATABASE_BYTES = _MAX_DATABASE_GIGABYTES * 1_024**3
 
 
 def get_stale_run_cutoff(now: datetime) -> datetime:
@@ -29,5 +30,5 @@ def validate_can_send_after_failures(consecutive_failure_count: int) -> None:
 def validate_can_store_at_database_size(database_bytes: int) -> None:
     if database_bytes > _MAX_DATABASE_BYTES:
         raise OpenSgLawHarvestHaltError(
-            f"The database holds {database_bytes:,} bytes, past the 10 GB halt; Royce rules before anything else is fetched"
+            f"The database holds {database_bytes:,} bytes, past the {_MAX_DATABASE_GIGABYTES} GB halt; Royce rules before anything else is fetched"
         )

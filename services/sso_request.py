@@ -12,6 +12,17 @@ _WINDOW_START = time(3, 0)
 _WINDOW_CUTOFF = time(6, 55)
 
 
+def get_sso_window_text() -> str:
+    return f"{_WINDOW_START:%H:%M} to {_WINDOW_CUTOFF:%H:%M} SGT"
+
+
+def get_sso_window_status(now: datetime) -> str:
+    return (
+        f"It is {now.astimezone(_SINGAPORE):%H:%M} SGT;"
+        f" requests go only from {get_sso_window_text()}"
+    )
+
+
 def validate_can_send_sso_request(
     now: datetime, sso_access_state: Optional[SsoAccessState]
 ) -> None:
@@ -22,11 +33,11 @@ def validate_can_send_sso_request(
     singapore_time = now.astimezone(_SINGAPORE).time()
     if singapore_time < _WINDOW_START:
         raise OpenSgLawSsoWindowError(
-            f"{singapore_time:%H:%M} SGT is before the 03:00 window"
+            f"{singapore_time:%H:%M} SGT is before the {_WINDOW_START:%H:%M} window"
         )
     if singapore_time >= _WINDOW_CUTOFF:
         raise OpenSgLawSsoWindowError(
-            f"{singapore_time:%H:%M} SGT is past the 06:55 cutoff"
+            f"{singapore_time:%H:%M} SGT is past the {_WINDOW_CUTOFF:%H:%M} cutoff"
         )
 
 
