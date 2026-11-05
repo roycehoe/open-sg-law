@@ -12,3 +12,7 @@ class OpenSgLawWriteTargetError(OpenSgLawError):
 
 class OpenSgLawHarvestRunError(OpenSgLawError):
     pass
+
+
+class OpenSgLawWriteCheckError(OpenSgLawError):
+    pass
