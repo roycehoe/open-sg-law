@@ -69,7 +69,27 @@ Each folder has a strict responsibility boundary. `populate/` is the only layer 
 
 ### Data flow
 
-Filled as each phase lands.
+Each stage is a script that runs one populate module, and each stage reads only what an earlier stage stored. No harvest has run yet: no request goes to a source until the permissions in the vision are in hand, so every table but `source` is empty.
+
+1. **Harvest SSO** (`scripts/harvest_sso.py` + `populate/sso_responses.py` + `gateway/sso.py`): reads the SSO row of `source` and refuses to start while SSO is CHALLENGED or outside its window. Inside the 03:00 to 06:55 SGT window it sends the robots file, the Act listing pages and the Act PDFs, one at a time through the SSO pacer, with no retry and no redirect followed. `services/sso_request.py` holds the window check and the PDF paths to fetch, and `services/sso_answer.py` judges each answer; a challenge sets the access state to CHALLENGED and stops the run. `services/harvest_run.py` holds the run guards (one running run per source, consecutive failures, database size). Each body is stored once per requested URL and SHA-256 through `services/source_response.py` and `crud/source_response.py`. Writes `source_response`, `harvest_run` and the access state on `source`.
+
+2. **Harvest the Internet Archive** (`scripts/harvest_archive.py` + `populate/archive_responses.py` + `gateway/internet_archive.py`): fetches the CDX answer for SSO's Act PDFs, then the latest plain capture of each Act (`services/archive_capture.py`) and the captures of the listing pages nearest the run's own time. Waits and retries on a 429. Stores bodies as stage 1 does. Writes `source_response` and `harvest_run`.
+
+3. **Build legislation rows** (`scripts/apply_legislation.py` + `populate/legislation.py` + `services/legislation.py`): reads the stored listing pages of both sources from `source_response`, parses them with `utils/sso_listing.py`, and builds one listing per harvest run, skipping a run that lacks a page. Every Act any listing shows gets a row, with its title from the newest listing that shows it and a flag saying whether the newest listing still does. Inserts new Acts and updates the title and flag of stored ones (`utils/legislation_update.py`). Writes `legislation`.
+
+4. **Import the Hansard links** (`scripts/apply_hansard_links.py` + `populate/hansard_links.py` + `services/hansard_links.py`): reads the act-links plan and the Hansard report export, two files kept outside git (`schemas/act_link_plan.py`, `schemas/hansard_report_export.py`), and the stored `legislation` rows. Builds each report's openhansard.sg URL with `utils/openhansard_url.py`. The dry run writes the plan (`schemas/hansard_link_plan.py`) for review; the commit builds it again, refuses unless it equals the reviewed file, then deletes and rewrites `bill`, `bill_report` and `act_history_entry` in one transaction.
+
+5. **Build versions** (`scripts/apply_legislation_versions.py` + `populate/legislation_versions.py` + `services/legislation_version.py`): reads every stored PDF with status 200 from `source_response`, one body at a time, and keeps the plain Act PDFs (`utils/sso_act_url.py`) of Acts that have a `legislation` row. Reads the printed version date from the PDF's lines (`utils/pdf_text.py`) and, for an archive copy, the capture time and CDX digest. Marks each Act's newest version by printed date, then capture time (`utils/legislation_version_update.py`). Writes `legislation_version`.
+
+6. **Parse sections** (`scripts/apply_legislation_sections.py` + `populate/legislation_sections.py` + `services/legislation_section.py`): reads each version's PDF, splits its lines (`utils/pdf_text.py`) into sections, Articles and schedules under their Part and Division headings, and compares the parse with the stored rows. One transaction per version: rewrites the sections when they changed and sets the version's two character counts. Postgres fills `search_vector` from the heading and text. A version that will not parse is listed with the reason and the run goes on. Writes `legislation_section` and the counts on `legislation_version`.
+
+7. **Derive aliases** (`scripts/apply_legislation_aliases.py` + `populate/legislation_aliases.py` + `services/legislation_alias.py`): reads the stored `legislation` rows and plans each Act's full title, title without the year and SSO code. Deletes the stored aliases the plan lacks and inserts the new ones. Writes `legislation_alias`.
+
+8. **Publish a source** (`scripts/publish_source.py` + `services/source_grants.py` + `crud/source_grant.py`): changes a source's publish status and, in the same transaction, grants and revokes the site role's `SELECT` so it can read exactly the tables whose sources are all published (see Site role below). Writes `source` and the grants.
+
+9. **Report coverage** (`scripts/coverage_figures.py` + `populate/coverage_figures.py`): read only. Counts versions by source and year, sections by kind, the lowest text share and the Hansard links.
+
+Not built: the eLitigation listing and judgment parsers and their stage (only `gateway/elitigation.py` exists, tested against fakes), the eGazette and data.gov.sg stages, and subsidiary legislation. Each waits on real pages to test against or on requests that may not go out yet, as the run's parked list, kept outside git, records.
 
 ### Database models
 
