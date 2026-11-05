@@ -52,3 +52,7 @@ class OpenSgLawSsoWindowError(OpenSgLawError):
 
 class OpenSgLawCdxAnswerError(OpenSgLawError):
     pass
+
+
+class OpenSgLawHansardLinkError(OpenSgLawError):
+    pass
