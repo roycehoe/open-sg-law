@@ -9,6 +9,10 @@ from utils.pdf_text import PdfLine, PdfPage
 _SECTION_NUMBER_PATTERN = re.compile(r"^(\d+[A-Z]*)\.")
 _PART_PATTERN = re.compile(r"^PART \d+[A-Z]*$")
 _DIVISION_PATTERN = re.compile(r"^Division \d+[A-Z]* — ")
+_SCHEDULE_HEADING_PATTERN = re.compile(
+    r"^((?:[A-Z]+[ -])*SCHEDULE)(?: (\[(?:Repealed|Deleted) by [^\]]+\]))?$"
+)
+_REPEALED_PATTERN = re.compile(r"^\d+[A-Z]*\.\s*\[(?:Repealed|Deleted) by [^\]]+\]$")
 _OPENING_QUOTE = "“"
 _CLOSING_QUOTE = "”"
 _BODY_END_LINES = frozenset({"LEGISLATIVE HISTORY", "COMPARATIVE TABLE"})
@@ -27,6 +31,7 @@ class ParsedSection:
     first_page_number: int
     last_page_number: int
     kind: LegislationSectionKind
+    is_repealed: bool
 
 
 @dataclass(frozen=True)
@@ -52,6 +57,8 @@ class _OpenSection:
     text_lines: list[str]
     first_page_number: int
     last_page_number: int
+    kind: LegislationSectionKind
+    is_repealed: bool
 
 
 class _SectionWalk:
@@ -71,6 +78,7 @@ class _SectionWalk:
         self.body_first_line_index: Optional[int] = None
         self.is_body_over: bool = False
         self.is_article_arrangement: bool = False
+        self.is_in_schedule: bool = False
 
     def _add_to_section_text(
         self, text: str, page_number: int, line_index: int
@@ -96,14 +104,44 @@ class _SectionWalk:
             )
         self.held_headings = []
 
-    def _start_section(
-        self, printed_number: str, line: PdfLine, page_number: int, line_index: int
-    ) -> None:
+    def _register_printed_number(self, printed_number: str) -> None:
         if printed_number in self.printed_numbers:
             raise OpenSgLawSectionParseError(
                 f"{self.sso_code} prints section {printed_number} twice"
             )
         self.printed_numbers.add(printed_number)
+
+    def _start_schedule(
+        self,
+        printed_number: str,
+        is_repealed: bool,
+        line: PdfLine,
+        page_number: int,
+        line_index: int,
+    ) -> None:
+        self._register_printed_number(printed_number)
+        self._flush_held_headings()
+        self._clear_part_and_division()
+        self.is_in_schedule = True
+        self.sections.append(
+            _OpenSection(
+                printed_number=printed_number,
+                heading=None,
+                part_heading=None,
+                division_heading=None,
+                text_lines=[line.text],
+                first_page_number=page_number,
+                last_page_number=page_number,
+                kind=LegislationSectionKind.SCHEDULE,
+                is_repealed=is_repealed,
+            )
+        )
+        self.kept_line_indices.add(line_index)
+
+    def _start_section(
+        self, printed_number: str, line: PdfLine, page_number: int, line_index: int
+    ) -> None:
+        self._register_printed_number(printed_number)
         first_line_index = (
             self.held_headings[0].line_index if self.held_headings else line_index
         )
@@ -134,6 +172,12 @@ class _SectionWalk:
                     else page_number
                 ),
                 last_page_number=page_number,
+                kind=(
+                    LegislationSectionKind.ARTICLE
+                    if self.is_article_arrangement
+                    else LegislationSectionKind.SECTION
+                ),
+                is_repealed=_REPEALED_PATTERN.match(line.text) is not None,
             )
         )
         self.kept_line_indices.update(
@@ -165,6 +209,19 @@ class _SectionWalk:
         if not self.sections and line.text == _ARTICLE_ARRANGEMENT_LINE:
             self.is_article_arrangement = True
         if line.text.endswith(_CONTINUED_SUFFIX):
+            return
+        schedule_heading_match = _SCHEDULE_HEADING_PATTERN.match(line.text)
+        if schedule_heading_match is not None and self.sections:
+            self._start_schedule(
+                schedule_heading_match.group(1),
+                schedule_heading_match.group(2) is not None,
+                line,
+                page_number,
+                line_index,
+            )
+            return
+        if self.is_in_schedule:
+            self._add_to_section_text(line.text, page_number, line_index)
             return
         if _PART_PATTERN.match(line.text):
             self._flush_held_headings()
@@ -213,11 +270,6 @@ class _SectionWalk:
         if not self.sections or self.body_first_line_index is None:
             raise OpenSgLawSectionParseError(f"{self.sso_code} prints no section")
         body_first_line_index = self.body_first_line_index
-        kind = (
-            LegislationSectionKind.ARTICLE
-            if self.is_article_arrangement
-            else LegislationSectionKind.SECTION
-        )
         return ParsedLegislation(
             sections=[
                 ParsedSection(
@@ -229,7 +281,8 @@ class _SectionWalk:
                     text="\n".join(open_section.text_lines),
                     first_page_number=open_section.first_page_number,
                     last_page_number=open_section.last_page_number,
-                    kind=kind,
+                    kind=open_section.kind,
+                    is_repealed=open_section.is_repealed,
                 )
                 for ordinal, open_section in enumerate(self.sections, 1)
             ],

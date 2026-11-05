@@ -10,6 +10,7 @@ from utils.pdf_text import PdfPage, get_pdf_pages
 _FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
 _INTERPRETATION_ACT_CODE = "IA1965"
 _CONSTITUTION_CODE = "CONS1963"
+_APPRAISERS_ACT_CODE = "AA1906"
 _GAMBLING_DUTIES_ACT_CODE = "GDA2022"
 _GAMBLING_REGULATORY_AUTHORITY_ACT_CODE = "GRASA2022"
 _INTERPRETATION_ACT_FIXTURE_PAGE_COUNT = 2
@@ -210,3 +211,79 @@ def test_the_sections_of_an_act_stay_kind_section() -> None:
         parsed_section.kind == LegislationSectionKind.SECTION
         for parsed_section in parsed_legislation.sections
     )
+
+
+def test_repealed_sections_are_flagged_and_their_neighbours_are_not() -> None:
+    pdf_pages = _get_pages("AA1906-p3-4.pdf")
+
+    parsed_legislation = get_parsed_legislation(_APPRAISERS_ACT_CODE, pdf_pages)
+    printed_number_to_section = {
+        parsed_section.printed_number: parsed_section
+        for parsed_section in parsed_legislation.sections
+    }
+
+    assert printed_number_to_section["3"].is_repealed
+    assert printed_number_to_section["3"].heading is None
+    assert printed_number_to_section["5"].is_repealed
+    assert printed_number_to_section["5"].heading is None
+    assert not printed_number_to_section["2"].is_repealed
+    assert not printed_number_to_section["4"].is_repealed
+    assert not printed_number_to_section["6"].is_repealed
+
+
+def test_the_schedule_of_an_act_is_one_row_of_kind_schedule() -> None:
+    pdf_pages = _get_pages("AA1906-schedule.pdf")
+
+    parsed_legislation = get_parsed_legislation(_APPRAISERS_ACT_CODE, pdf_pages)
+    schedule_sections = [
+        parsed_section
+        for parsed_section in parsed_legislation.sections
+        if parsed_section.kind == LegislationSectionKind.SCHEDULE
+    ]
+
+    assert [parsed_section.printed_number for parsed_section in schedule_sections] == [
+        "THE SCHEDULE"
+    ]
+    assert schedule_sections[0].heading is None
+    assert schedule_sections[0].part_heading is None
+    assert not schedule_sections[0].is_repealed
+    assert parsed_legislation.sections[-1] == schedule_sections[0]
+    assert "APPRAISER’S LICENCE" in schedule_sections[0].text
+    assert [
+        parsed_section.is_repealed for parsed_section in parsed_legislation.sections
+    ] == [True, True, False, False, False, False, False]
+
+
+def test_the_numbered_paragraphs_of_a_schedule_start_no_section() -> None:
+    pdf_pages = _get_pages("CONS1963-first-schedule.pdf")
+
+    parsed_legislation = get_parsed_legislation(_CONSTITUTION_CODE, pdf_pages)
+    printed_numbers = [
+        parsed_section.printed_number for parsed_section in parsed_legislation.sections
+    ]
+    first_schedule = parsed_legislation.sections[-1]
+
+    assert printed_numbers == ["1", "2", "FIRST SCHEDULE"]
+    assert first_schedule.kind == LegislationSectionKind.SCHEDULE
+    assert "1. Oath of Office of President" in first_schedule.text
+    assert "1A. Oath of Office of Person Exercising Functions" in first_schedule.text
+    assert "4A. Oath for due execution of Office of Minister" in first_schedule.text
+    assert parsed_legislation.sections[0].first_page_number == 1
+
+
+def test_a_schedule_heading_printed_again_at_a_page_top_is_dropped() -> None:
+    pdf_pages = _get_pages("CONS1963-first-schedule.pdf")
+
+    first_schedule = get_parsed_legislation(_CONSTITUTION_CODE, pdf_pages).sections[-1]
+
+    assert "continued" not in first_schedule.text
+    assert first_schedule.last_page_number == len(pdf_pages)
+
+
+def test_a_schedule_label_printed_twice_raises() -> None:
+    pdf_pages = _get_pages("AA1906-schedule.pdf")
+
+    with pytest.raises(
+        OpenSgLawSectionParseError, match="AA1906 prints section THE SCHEDULE twice"
+    ):
+        get_parsed_legislation(_APPRAISERS_ACT_CODE, pdf_pages + pdf_pages)

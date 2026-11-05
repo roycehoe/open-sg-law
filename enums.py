@@ -68,3 +68,4 @@ class ActHistoryDefect(StrEnum):
 class LegislationSectionKind(StrEnum):
     SECTION = "SECTION"
     ARTICLE = "ARTICLE"
+    SCHEDULE = "SCHEDULE"
