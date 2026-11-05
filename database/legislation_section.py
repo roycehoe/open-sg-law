@@ -16,6 +16,11 @@ class LegislationSection(SQLModel, table=True):
             "ordinal",
             name="uq_legislation_section_legislation_version_id_ordinal",
         ),
+        UniqueConstraint(
+            "legislation_version_id",
+            "printed_number",
+            name="uq_legislation_section_legislation_version_id_printed_number",
+        ),
         CheckConstraint(
             "kind IN ("
             + ", ".join(

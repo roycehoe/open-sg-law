@@ -6,7 +6,15 @@ from crud.legislation_section import CRUDLegislationSection, LegislationSectionR
 from crud.legislation_version import CRUDLegislationVersion
 from database.legislation_section import LegislationSection
 from database.legislation_version import LegislationVersion
-from enums import LegislationSectionKind
+from database.source_response import SourceResponse
+from enums import LegislationSectionKind, SourceName
+from tests.document_seed import (
+    IA1965_BODY,
+    IA1965_OTHER_SSO_URL,
+    SSO_FETCHED_AT,
+    seed_document,
+    seed_harvest_run,
+)
 from tests.legislation_version_seed import build_version, seed_version_inputs
 
 
@@ -15,6 +23,31 @@ def _seed_version(session: Session) -> int:
         [build_version(seed_version_inputs(session))]
     )
     legislation_version_id = session.exec(select(LegislationVersion.id)).one()
+    assert legislation_version_id is not None
+    return legislation_version_id
+
+
+def _seed_other_version(session: Session) -> int:
+    seed_document(
+        session,
+        seed_harvest_run(session, SourceName.SSO),
+        SourceName.SSO,
+        IA1965_OTHER_SSO_URL,
+        IA1965_BODY,
+        SSO_FETCHED_AT,
+    )
+    source_response_id = session.exec(
+        select(SourceResponse.id).where(
+            SourceResponse.requested_url == IA1965_OTHER_SSO_URL
+        )
+    ).one()
+    assert source_response_id is not None
+    CRUDLegislationVersion(session).add_many([build_version(source_response_id)])
+    legislation_version_id = session.exec(
+        select(LegislationVersion.id).where(
+            LegislationVersion.source_response_id == source_response_id
+        )
+    ).one()
     assert legislation_version_id is not None
     return legislation_version_id
 
@@ -114,3 +147,36 @@ def test_a_kind_outside_the_enum_is_refused(scratch_session: Session) -> None:
 
     with pytest.raises(IntegrityError):
         CRUDLegislationSection(scratch_session).add_many([legislation_section])
+
+
+def test_a_second_section_with_one_printed_number_is_refused(
+    scratch_session: Session,
+) -> None:
+    legislation_version_id = _seed_version(scratch_session)
+    CRUDLegislationSection(scratch_session).add_many(
+        [_build_section(legislation_version_id, 1, "9A")]
+    )
+
+    with pytest.raises(IntegrityError):
+        CRUDLegislationSection(scratch_session).add_many(
+            [_build_section(legislation_version_id, 2, "9A")]
+        )
+
+
+def test_one_printed_number_is_kept_in_two_versions(scratch_session: Session) -> None:
+    legislation_version_id = _seed_version(scratch_session)
+    other_legislation_version_id = _seed_other_version(scratch_session)
+
+    CRUDLegislationSection(scratch_session).add_many(
+        [
+            _build_section(legislation_version_id, 1, "9A"),
+            _build_section(other_legislation_version_id, 1, "9A"),
+        ]
+    )
+
+    assert (
+        CRUDLegislationSection(scratch_session).get_count_by_legislation_version_id(
+            other_legislation_version_id
+        )
+        == 1
+    )
