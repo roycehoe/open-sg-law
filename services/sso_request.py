@@ -54,6 +54,10 @@ def get_act_pdf_paths_to_fetch(
         sso_code_to_stored_stamps.setdefault(sso_act_pdf.sso_code, set()).add(
             sso_act_pdf.version_stamp
         )
+    sso_code_to_newest_stored_stamp = {
+        sso_code: max(stored_stamps)
+        for sso_code, stored_stamps in sso_code_to_stored_stamps.items()
+    }
     rows_to_fetch = [
         listing_row
         for listing_row in listing_rows
@@ -65,7 +69,7 @@ def get_act_pdf_paths_to_fetch(
         for listing_row in sorted(
             rows_to_fetch,
             key=lambda listing_row: (
-                max(sso_code_to_stored_stamps.get(listing_row.sso_code, {""})),
+                sso_code_to_newest_stored_stamp.get(listing_row.sso_code, ""),
                 listing_row.sso_code,
             ),
         )
