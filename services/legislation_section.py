@@ -13,6 +13,7 @@ _OPENING_QUOTE = "“"
 _CLOSING_QUOTE = "”"
 _BODY_END_LINES = frozenset({"LEGISLATIVE HISTORY", "COMPARATIVE TABLE"})
 _CONTINUED_SUFFIX = "— continued"
+_ARTICLE_ARRANGEMENT_LINE = "ARRANGEMENT OF ARTICLES"
 
 
 @dataclass(frozen=True)
@@ -69,6 +70,7 @@ class _SectionWalk:
         self.division_line_index: Optional[int] = None
         self.body_first_line_index: Optional[int] = None
         self.is_body_over: bool = False
+        self.is_article_arrangement: bool = False
 
     def _add_to_section_text(
         self, text: str, page_number: int, line_index: int
@@ -160,6 +162,8 @@ class _SectionWalk:
             self._add_to_section_text(line.text, page_number, line_index)
             return
 
+        if not self.sections and line.text == _ARTICLE_ARRANGEMENT_LINE:
+            self.is_article_arrangement = True
         if line.text.endswith(_CONTINUED_SUFFIX):
             return
         if _PART_PATTERN.match(line.text):
@@ -209,6 +213,11 @@ class _SectionWalk:
         if not self.sections or self.body_first_line_index is None:
             raise OpenSgLawSectionParseError(f"{self.sso_code} prints no section")
         body_first_line_index = self.body_first_line_index
+        kind = (
+            LegislationSectionKind.ARTICLE
+            if self.is_article_arrangement
+            else LegislationSectionKind.SECTION
+        )
         return ParsedLegislation(
             sections=[
                 ParsedSection(
@@ -220,7 +229,7 @@ class _SectionWalk:
                     text="\n".join(open_section.text_lines),
                     first_page_number=open_section.first_page_number,
                     last_page_number=open_section.last_page_number,
-                    kind=LegislationSectionKind.SECTION,
+                    kind=kind,
                 )
                 for ordinal, open_section in enumerate(self.sections, 1)
             ],

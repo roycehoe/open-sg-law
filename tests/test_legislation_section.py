@@ -9,6 +9,7 @@ from utils.pdf_text import PdfPage, get_pdf_pages
 
 _FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
 _INTERPRETATION_ACT_CODE = "IA1965"
+_CONSTITUTION_CODE = "CONS1963"
 _GAMBLING_DUTIES_ACT_CODE = "GDA2022"
 _GAMBLING_REGULATORY_AUTHORITY_ACT_CODE = "GRASA2022"
 _INTERPRETATION_ACT_FIXTURE_PAGE_COUNT = 2
@@ -180,5 +181,32 @@ def test_the_legislative_history_is_left_out_of_every_section() -> None:
     assert all(
         "LEGISLATIVE HISTORY" not in parsed_section.text
         and "Act XIV of 1867" not in parsed_section.text
+        for parsed_section in parsed_legislation.sections
+    )
+
+
+def test_the_articles_of_the_constitution_are_kind_article() -> None:
+    pdf_pages = _get_pages("CONS1963-p2-11.pdf")
+
+    parsed_legislation = get_parsed_legislation(_CONSTITUTION_CODE, pdf_pages)
+
+    assert [
+        parsed_section.printed_number for parsed_section in parsed_legislation.sections
+    ] == ["1", "2"]
+    assert all(
+        parsed_section.kind == LegislationSectionKind.ARTICLE
+        for parsed_section in parsed_legislation.sections
+    )
+    assert parsed_legislation.sections[0].heading == "Citation"
+    assert parsed_legislation.sections[0].part_heading == "PART 1\nPRELIMINARY"
+
+
+def test_the_sections_of_an_act_stay_kind_section() -> None:
+    pdf_pages = _get_pages("IA1965-p1-4.pdf")
+
+    parsed_legislation = get_parsed_legislation(_INTERPRETATION_ACT_CODE, pdf_pages)
+
+    assert all(
+        parsed_section.kind == LegislationSectionKind.SECTION
         for parsed_section in parsed_legislation.sections
     )
