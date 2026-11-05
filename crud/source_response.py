@@ -116,7 +116,10 @@ class CRUDSourceResponse:
             .where(col(SourceResponse.body_bytes).is_not(None))
             .order_by(col(SourceResponse.id))
         )
-        return [DocumentRow(*row) for row in self.session.exec(statement).all()]
+        return [
+            DocumentRow(*row)  # pyright: ignore[reportArgumentType] a stored row has an id and a source name
+            for row in self.session.exec(statement).all()
+        ]
 
     def get_body_bytes_by_id(self, source_response_id: int) -> bytes:
         statement = (

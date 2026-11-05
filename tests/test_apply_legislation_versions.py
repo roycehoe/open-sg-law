@@ -107,7 +107,7 @@ def test_commit_writes_the_versions_and_vacuums_the_table(
     scratch_session: Session, log_recorder: _LogRecorder
 ) -> None:
     _seed_documents(scratch_session)
-    table_name = LegislationVersion.__tablename__  # pyright: ignore[reportAssignmentType] sqlmodel types __tablename__ as a declared_attr
+    table_name: str = LegislationVersion.__tablename__  # pyright: ignore[reportAssignmentType] sqlmodel types __tablename__ as a declared_attr
     vacuum_count_before = CRUDVacuum(scratch_session).get_vacuum_count(table_name)
 
     apply_legislation_versions(is_commit=True)
