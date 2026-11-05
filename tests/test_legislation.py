@@ -1,138 +1,42 @@
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Optional
 
 import pytest
 from sqlalchemy.engine import Engine
 from sqlmodel import Session
 
-from crud.harvest_run import CRUDHarvestRun
 from crud.legislation import CRUDLegislation
-from crud.source_response import CRUDSourceResponse, ListingPageRow
-from database.harvest_run import HarvestRun
-from enums import HarvestRunStatus, ResponseKind, SourceName
+from crud.source_response import ListingPageRow
+from enums import SourceName
 from exceptions import OpenSgLawListingParseError
-from gateway.internet_archive import build_archive_capture_url
 from gateway.sso import build_sso_listing_url
 from populate.legislation import get_legislation_write, write_legislation
-from schemas.source_http_response import SourceHttpResponse
 from services.legislation import (
     Listing,
     PlannedLegislation,
     build_planned_legislation,
     get_listings,
 )
-from services.source_response import build_source_response
+from tests.listing_seed import (
+    FIRST_PAGE_BODY,
+    LISTING_CONTENT_TYPE,
+    SECOND_PAGE_BODY,
+    build_listing_page_row,
+    build_listing_page_rows,
+    seed_listing,
+)
 from tests.source_seed import seed_sources
 from utils.sso_listing import SsoListingRow, get_sso_listing_page
 
-_FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures" / "sso_listing"
-_FIRST_PAGE_BODY = (
-    _FIXTURES_DIRECTORY / "browse-all-p1-20240716-trimmed.html"
-).read_bytes()
-_SECOND_PAGE_BODY = (
-    _FIXTURES_DIRECTORY / "browse-all-p2-20240719-trimmed.html"
-).read_bytes()
-_FIRST_PAGE_ROWS = get_sso_listing_page(_FIRST_PAGE_BODY.decode("utf-8")).rows
-_SECOND_PAGE_ROWS = get_sso_listing_page(_SECOND_PAGE_BODY.decode("utf-8")).rows
-_FIRST_CAPTURE_TIMESTAMP = "20240716234218"
-_SECOND_CAPTURE_TIMESTAMP = "20240719042908"
+_FIRST_PAGE_ROWS = get_sso_listing_page(FIRST_PAGE_BODY.decode("utf-8")).rows
+_SECOND_PAGE_ROWS = get_sso_listing_page(SECOND_PAGE_BODY.decode("utf-8")).rows
 _ARCHIVE_LISTED_AT = datetime(2024, 7, 16, 23, 42, 18, tzinfo=timezone.utc)
 _SSO_FETCHED_AT = datetime(2026, 11, 5, 19, 0, tzinfo=timezone.utc)
 _ARCHIVE_FETCHED_AT = datetime(2026, 11, 5, 18, 0, tzinfo=timezone.utc)
-_LISTING_CONTENT_TYPE = "text/html; charset=utf-8"
-_PAGE_COUNT = 2
 _CODE_COUNT = 6
 
 
-def _build_listing_page_row(
-    page_id: int,
-    harvest_run_id: int,
-    source: SourceName,
-    page_index: int,
-    body_text: Optional[str],
-    capture_timestamp: str,
-    fetched_at: datetime,
-) -> ListingPageRow:
-    sso_url = build_sso_listing_url(page_index)
-    requested_url = (
-        build_archive_capture_url(capture_timestamp, sso_url)
-        if source == SourceName.INTERNET_ARCHIVE
-        else sso_url
-    )
-    return ListingPageRow(
-        id=page_id,
-        requested_url=requested_url,
-        final_url=requested_url,
-        content_type=_LISTING_CONTENT_TYPE,
-        body_text=body_text,
-        fetched_at=fetched_at,
-        source=source,
-        harvest_run_id=harvest_run_id,
-    )
-
-
-def _build_listing_page_rows(
-    harvest_run_id: int,
-    source: SourceName,
-    fetched_at: datetime,
-    page_indexes: tuple[int, ...] = (0, 1),
-) -> list[ListingPageRow]:
-    page_index_to_body = {
-        0: _FIRST_PAGE_BODY.decode("utf-8"),
-        1: _SECOND_PAGE_BODY.decode("utf-8"),
-    }
-    page_index_to_timestamp = {
-        0: _FIRST_CAPTURE_TIMESTAMP,
-        1: _SECOND_CAPTURE_TIMESTAMP,
-    }
-    return [
-        _build_listing_page_row(
-            page_id=harvest_run_id * 10 + page_index,
-            harvest_run_id=harvest_run_id,
-            source=source,
-            page_index=page_index,
-            body_text=page_index_to_body[page_index],
-            capture_timestamp=page_index_to_timestamp[page_index],
-            fetched_at=fetched_at,
-        )
-        for page_index in page_indexes
-    ]
-
-
-def _seed_listing(
-    session: Session,
-    source: SourceName,
-    fetched_at: datetime,
-    page_indexes: tuple[int, ...] = (0, 1),
-) -> None:
-    harvest_run = HarvestRun(
-        source=source, status=HarvestRunStatus.SUCCEEDED, started_at=fetched_at
-    )
-    CRUDHarvestRun(session).create(harvest_run)
-    assert harvest_run.id is not None
-    for page_row in _build_listing_page_rows(
-        harvest_run.id, source, fetched_at, page_indexes
-    ):
-        source_response = build_source_response(
-            SourceHttpResponse(
-                status_code=200,
-                requested_url=page_row.requested_url,
-                final_url=page_row.final_url,
-                content_type=page_row.content_type,
-                body=(page_row.body_text or "").encode("utf-8"),
-            ),
-            ResponseKind.LISTING_PAGE,
-            source,
-            harvest_run.id,
-        )
-        source_response.fetched_at = fetched_at
-        CRUDSourceResponse(session).insert_on_conflict_do_nothing(source_response)
-    session.commit()
-
-
 def test_a_complete_archive_listing_is_listed_at_its_earliest_capture() -> None:
-    listing_page_rows = _build_listing_page_rows(
+    listing_page_rows = build_listing_page_rows(
         1, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT
     )
 
@@ -149,7 +53,7 @@ def test_a_complete_archive_listing_is_listed_at_its_earliest_capture() -> None:
 
 
 def test_an_sso_listing_is_listed_when_it_was_fetched() -> None:
-    listing_page_rows = _build_listing_page_rows(2, SourceName.SSO, _SSO_FETCHED_AT)
+    listing_page_rows = build_listing_page_rows(2, SourceName.SSO, _SSO_FETCHED_AT)
 
     listings = get_listings(listing_page_rows)
 
@@ -158,10 +62,10 @@ def test_an_sso_listing_is_listed_when_it_was_fetched() -> None:
 
 
 def test_a_listing_missing_a_page_is_incomplete_and_gives_no_rows() -> None:
-    first_run_without_page_one = _build_listing_page_rows(
+    first_run_without_page_one = build_listing_page_rows(
         1, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT, page_indexes=(1,)
     )
-    second_run_without_page_two = _build_listing_page_rows(
+    second_run_without_page_two = build_listing_page_rows(
         2, SourceName.SSO, _SSO_FETCHED_AT, page_indexes=(0,)
     )
 
@@ -173,10 +77,10 @@ def test_a_listing_missing_a_page_is_incomplete_and_gives_no_rows() -> None:
 
 def test_a_page_with_no_text_or_no_result_count_is_left_out() -> None:
     listing_page_rows = [
-        _build_listing_page_row(
+        build_listing_page_row(
             11, 1, SourceName.SSO, 0, "<html></html>", "", _SSO_FETCHED_AT
         ),
-        _build_listing_page_row(12, 1, SourceName.SSO, 1, None, "", _SSO_FETCHED_AT),
+        build_listing_page_row(12, 1, SourceName.SSO, 1, None, "", _SSO_FETCHED_AT),
     ]
 
     listings = get_listings(listing_page_rows)
@@ -190,8 +94,8 @@ def test_an_archive_page_with_no_capture_time_raises() -> None:
         id=1,
         requested_url=build_sso_listing_url(0),
         final_url=build_sso_listing_url(0),
-        content_type=_LISTING_CONTENT_TYPE,
-        body_text=_FIRST_PAGE_BODY.decode("utf-8"),
+        content_type=LISTING_CONTENT_TYPE,
+        body_text=FIRST_PAGE_BODY.decode("utf-8"),
         fetched_at=_ARCHIVE_FETCHED_AT,
         source=SourceName.INTERNET_ARCHIVE,
         harvest_run_id=1,
@@ -273,7 +177,7 @@ def test_every_fixture_code_is_planned_for_insert_and_a_second_plan_changes_noth
     scratch_session: Session,
 ) -> None:
     seed_sources(scratch_session)
-    _seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
 
     first_write = get_legislation_write(scratch_session)
     write_legislation(scratch_session, first_write)
@@ -302,7 +206,7 @@ def test_a_stored_row_read_back_in_a_new_session_is_sorted_as_unchanged(
     scratch_engine: Engine, scratch_session: Session
 ) -> None:
     seed_sources(scratch_session)
-    _seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
     write_legislation(scratch_session, get_legislation_write(scratch_session))
     scratch_session.commit()
 
@@ -321,10 +225,10 @@ def test_a_newer_sso_listing_updates_the_source_of_every_stored_code(
     scratch_session: Session,
 ) -> None:
     seed_sources(scratch_session)
-    _seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
     write_legislation(scratch_session, get_legislation_write(scratch_session))
     scratch_session.commit()
-    _seed_listing(scratch_session, SourceName.SSO, _SSO_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.SSO, _SSO_FETCHED_AT)
 
     legislation_write = get_legislation_write(scratch_session)
     write_legislation(scratch_session, legislation_write)
@@ -343,10 +247,10 @@ def test_an_incomplete_listing_run_is_reported_and_marks_no_code_as_dropped(
     scratch_session: Session,
 ) -> None:
     seed_sources(scratch_session)
-    _seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
+    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, _ARCHIVE_FETCHED_AT)
     write_legislation(scratch_session, get_legislation_write(scratch_session))
     scratch_session.commit()
-    _seed_listing(scratch_session, SourceName.SSO, _SSO_FETCHED_AT, page_indexes=(0,))
+    seed_listing(scratch_session, SourceName.SSO, _SSO_FETCHED_AT, page_indexes=(0,))
 
     legislation_write = get_legislation_write(scratch_session)
 
