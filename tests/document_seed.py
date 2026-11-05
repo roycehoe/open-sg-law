@@ -108,7 +108,7 @@ def seed_cdx_answer(session: Session, harvest_run_id: int, body_text: str) -> No
     session.commit()
 
 
-def seed_ia1965_version(session: Session) -> int:
+def seed_version_inputs(session: Session) -> int:
     seed_sources(session)
     seed_legislation(session, {"IA1965": "Interpretation Act 1965"})
     seed_document(
@@ -121,7 +121,13 @@ def seed_ia1965_version(session: Session) -> int:
     )
     source_response_id = session.exec(select(SourceResponse.id)).one()
     assert source_response_id is not None
-    CRUDLegislationVersion(session).add_many([build_version(source_response_id)])
+    return source_response_id
+
+
+def seed_ia1965_version(session: Session) -> int:
+    CRUDLegislationVersion(session).add_many(
+        [build_version(seed_version_inputs(session))]
+    )
     session.commit()
     legislation_version_id = session.exec(select(LegislationVersion.id)).one()
     assert legislation_version_id is not None

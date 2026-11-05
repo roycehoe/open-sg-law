@@ -13,23 +13,14 @@ from tests.document_seed import (
     SSO_FETCHED_AT,
     seed_document,
     seed_harvest_run,
+    seed_ia1965_version,
 )
 from tests.legislation_version_seed import (
     build_section,
     build_version,
-    seed_version_inputs,
 )
 
 _SHORT_TITLE_HEADING = "Short title"
-
-
-def _seed_version(session: Session) -> int:
-    CRUDLegislationVersion(session).add_many(
-        [build_version(seed_version_inputs(session))]
-    )
-    legislation_version_id = session.exec(select(LegislationVersion.id)).one()
-    assert legislation_version_id is not None
-    return legislation_version_id
 
 
 def _seed_other_version(session: Session) -> int:
@@ -58,7 +49,7 @@ def _seed_other_version(session: Session) -> int:
 
 
 def test_sections_are_read_back_in_ordinal_order(scratch_session: Session) -> None:
-    legislation_version_id = _seed_version(scratch_session)
+    legislation_version_id = seed_ia1965_version(scratch_session)
 
     CRUDLegislationSection(scratch_session).add_many(
         [
@@ -105,7 +96,7 @@ def test_sections_are_read_back_in_ordinal_order(scratch_session: Session) -> No
 
 
 def test_deleting_a_versions_sections_leaves_none(scratch_session: Session) -> None:
-    legislation_version_id = _seed_version(scratch_session)
+    legislation_version_id = seed_ia1965_version(scratch_session)
     CRUDLegislationSection(scratch_session).add_many(
         [
             build_section(
@@ -131,7 +122,7 @@ def test_deleting_a_versions_sections_leaves_none(scratch_session: Session) -> N
 
 
 def test_a_second_section_with_one_ordinal_is_refused(scratch_session: Session) -> None:
-    legislation_version_id = _seed_version(scratch_session)
+    legislation_version_id = seed_ia1965_version(scratch_session)
     CRUDLegislationSection(scratch_session).add_many(
         [
             build_section(
@@ -159,7 +150,7 @@ def test_a_second_section_with_one_ordinal_is_refused(scratch_session: Session) 
 
 
 def test_a_kind_outside_the_enum_is_refused(scratch_session: Session) -> None:
-    legislation_version_id = _seed_version(scratch_session)
+    legislation_version_id = seed_ia1965_version(scratch_session)
     legislation_section = build_section(
         legislation_version_id,
         1,
@@ -176,7 +167,7 @@ def test_a_kind_outside_the_enum_is_refused(scratch_session: Session) -> None:
 def test_a_second_section_with_one_printed_number_is_refused(
     scratch_session: Session,
 ) -> None:
-    legislation_version_id = _seed_version(scratch_session)
+    legislation_version_id = seed_ia1965_version(scratch_session)
     CRUDLegislationSection(scratch_session).add_many(
         [
             build_section(
@@ -204,7 +195,7 @@ def test_a_second_section_with_one_printed_number_is_refused(
 
 
 def test_one_printed_number_is_kept_in_two_versions(scratch_session: Session) -> None:
-    legislation_version_id = _seed_version(scratch_session)
+    legislation_version_id = seed_ia1965_version(scratch_session)
     other_legislation_version_id = _seed_other_version(scratch_session)
 
     CRUDLegislationSection(scratch_session).add_many(

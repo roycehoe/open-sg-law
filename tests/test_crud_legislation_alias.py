@@ -6,7 +6,7 @@ from crud.legislation_alias import CRUDLegislationAlias, LegislationAliasRow
 from database.legislation import Legislation
 from database.legislation_alias import LegislationAlias
 from enums import AliasKind
-from tests.legislation_version_seed import seed_version_inputs
+from tests.document_seed import seed_version_inputs
 
 
 def _seed_legislation_id(session: Session) -> int:

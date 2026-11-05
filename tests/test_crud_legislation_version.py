@@ -4,11 +4,11 @@ from sqlmodel import Session, select
 
 from crud.legislation_version import CRUDLegislationVersion, LegislationVersionRow
 from database.legislation_version import LegislationVersion
+from tests.document_seed import seed_version_inputs
 from tests.legislation_version_seed import (
     CAPTURED_AT,
     VERSION_DATE,
     build_version,
-    seed_version_inputs,
 )
 from utils.legislation_version_update import LegislationVersionNewestUpdate
 

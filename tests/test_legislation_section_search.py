@@ -2,13 +2,10 @@ from sqlalchemy import func
 from sqlmodel import Session, col, select
 
 from crud.legislation_section import CRUDLegislationSection
-from crud.legislation_version import CRUDLegislationVersion
 from database.legislation_section import LegislationSection
-from database.legislation_version import LegislationVersion
+from tests.document_seed import seed_ia1965_version
 from tests.legislation_version_seed import (
     build_section,
-    build_version,
-    seed_version_inputs,
 )
 
 _PURPOSIVE_HEADING = (
@@ -37,11 +34,7 @@ _STYLE_TEXT = (
 def test_a_keyword_finds_only_the_section_that_holds_it(
     scratch_session: Session,
 ) -> None:
-    CRUDLegislationVersion(scratch_session).add_many(
-        [build_version(seed_version_inputs(scratch_session))]
-    )
-    legislation_version_id = scratch_session.exec(select(LegislationVersion.id)).one()
-    assert legislation_version_id is not None
+    legislation_version_id = seed_ia1965_version(scratch_session)
     CRUDLegislationSection(scratch_session).add_many(
         [
             build_section(
