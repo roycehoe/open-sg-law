@@ -8,8 +8,11 @@ from crud.harvest_run import CRUDHarvestRun
 from crud.source_response import CRUDSourceResponse, ListingPageRow
 from database.harvest_run import HarvestRun
 from enums import HarvestRunStatus, ResponseKind, SourceName
+from populate.legislation import get_legislation_write, write_legislation
 from schemas.source_http_response import SourceHttpResponse
 from services.source_response import build_source_response
+from tests.document_seed import ARCHIVE_FETCHED_AT
+from tests.source_seed import seed_sources
 from utils.archive_capture_url import build_archive_capture_url
 from utils.sso_listing import build_sso_listing_url
 
@@ -111,4 +114,11 @@ def seed_listing(
         )
         source_response.fetched_at = fetched_at
         CRUDSourceResponse(session).insert_on_conflict_do_nothing(source_response)
+    session.commit()
+
+
+def seed_archive_legislation(session: Session) -> None:
+    seed_sources(session)
+    seed_listing(session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
+    write_legislation(session, get_legislation_write(session))
     session.commit()

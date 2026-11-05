@@ -6,14 +6,10 @@ from sqlmodel import Session
 
 import scripts.apply_legislation_aliases as apply_legislation_aliases_script
 from crud.legislation_alias import CRUDLegislationAlias
-from enums import SourceName
 from exceptions import OpenSgLawWriteCheckError, OpenSgLawWriteTargetError
-from populate.legislation import get_legislation_write, write_legislation
 from scripts.apply_legislation_aliases import apply_legislation_aliases
 from services.legislation_alias import LegislationAliasWrite
-from tests.document_seed import ARCHIVE_FETCHED_AT
-from tests.listing_seed import seed_listing
-from tests.source_seed import seed_sources
+from tests.listing_seed import seed_archive_legislation
 
 _PROTECTED_DATABASE_URL = "postgresql://u:p@localhost:5435/x"
 _DATED_TITLE_ALIAS_COUNT = 18
@@ -37,17 +33,10 @@ def log_recorder(
     return recorder
 
 
-def _seed_legislation(session: Session) -> None:
-    seed_sources(session)
-    seed_listing(session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
-    write_legislation(session, get_legislation_write(session))
-    session.commit()
-
-
 def test_a_dry_run_writes_nothing_and_logs_the_counts(
     scratch_session: Session, log_recorder: _LogRecorder
 ) -> None:
-    _seed_legislation(scratch_session)
+    seed_archive_legislation(scratch_session)
 
     apply_legislation_aliases(is_commit=False)
 
@@ -63,7 +52,7 @@ def test_a_dry_run_writes_nothing_and_logs_the_counts(
 def test_commit_writes_the_planned_aliases(
     scratch_session: Session, log_recorder: _LogRecorder
 ) -> None:
-    _seed_legislation(scratch_session)
+    seed_archive_legislation(scratch_session)
 
     apply_legislation_aliases(is_commit=True)
 
@@ -77,7 +66,7 @@ def test_commit_refuses_the_protected_port_before_any_write(
     log_recorder: _LogRecorder,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _seed_legislation(scratch_session)
+    seed_archive_legislation(scratch_session)
     monkeypatch.setattr(
         apply_legislation_aliases_script,
         "settings",
@@ -96,7 +85,7 @@ def test_commit_stores_nothing_when_the_stored_count_misses_the_plan(
     log_recorder: _LogRecorder,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _seed_legislation(scratch_session)
+    seed_archive_legislation(scratch_session)
 
     def skip_write(
         session: Session, legislation_alias_write: LegislationAliasWrite

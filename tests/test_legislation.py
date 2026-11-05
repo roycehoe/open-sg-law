@@ -22,6 +22,7 @@ from tests.listing_seed import (
     SECOND_PAGE_BODY,
     build_listing_page_row,
     build_listing_page_rows,
+    seed_archive_legislation,
     seed_listing,
 )
 from tests.source_seed import seed_sources
@@ -207,10 +208,7 @@ def test_every_fixture_code_is_planned_for_insert_and_a_second_plan_changes_noth
 def test_a_stored_row_read_back_in_a_new_session_is_sorted_as_unchanged(
     scratch_engine: Engine, scratch_session: Session
 ) -> None:
-    seed_sources(scratch_session)
-    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
-    write_legislation(scratch_session, get_legislation_write(scratch_session))
-    scratch_session.commit()
+    seed_archive_legislation(scratch_session)
 
     with Session(scratch_engine) as new_session:
         legislation_rows = CRUDLegislation(new_session).get_rows()
@@ -226,10 +224,7 @@ def test_a_stored_row_read_back_in_a_new_session_is_sorted_as_unchanged(
 def test_a_newer_sso_listing_updates_the_source_of_every_stored_code(
     scratch_session: Session,
 ) -> None:
-    seed_sources(scratch_session)
-    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
-    write_legislation(scratch_session, get_legislation_write(scratch_session))
-    scratch_session.commit()
+    seed_archive_legislation(scratch_session)
     seed_listing(scratch_session, SourceName.SSO, SSO_FETCHED_AT)
 
     legislation_write = get_legislation_write(scratch_session)
@@ -248,10 +243,7 @@ def test_a_newer_sso_listing_updates_the_source_of_every_stored_code(
 def test_an_incomplete_listing_run_is_reported_and_marks_no_code_as_dropped(
     scratch_session: Session,
 ) -> None:
-    seed_sources(scratch_session)
-    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
-    write_legislation(scratch_session, get_legislation_write(scratch_session))
-    scratch_session.commit()
+    seed_archive_legislation(scratch_session)
     seed_listing(scratch_session, SourceName.SSO, SSO_FETCHED_AT, page_indexes=(0,))
 
     legislation_write = get_legislation_write(scratch_session)

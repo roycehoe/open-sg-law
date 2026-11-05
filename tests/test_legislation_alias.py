@@ -3,14 +3,13 @@ from sqlmodel import Session
 from crud.legislation import CRUDLegislation, LegislationRow
 from crud.legislation_alias import CRUDLegislationAlias
 from enums import AliasKind, SourceName
-from populate.legislation import get_legislation_write, write_legislation
 from populate.legislation_aliases import (
     get_legislation_alias_write,
     write_legislation_aliases,
 )
 from services.legislation_alias import PlannedAlias, build_planned_aliases
-from tests.document_seed import ARCHIVE_FETCHED_AT, seed_legislation
-from tests.listing_seed import seed_listing
+from tests.document_seed import seed_legislation
+from tests.listing_seed import seed_archive_legislation
 from tests.source_seed import seed_sources
 from utils.legislation_update import LegislationUpdate
 
@@ -49,10 +48,7 @@ def test_a_dated_title_gives_three_aliases_and_an_undated_title_two() -> None:
 def test_the_stage_plans_every_alias_once_and_nothing_after_the_write(
     scratch_session: Session,
 ) -> None:
-    seed_sources(scratch_session)
-    seed_listing(scratch_session, SourceName.INTERNET_ARCHIVE, ARCHIVE_FETCHED_AT)
-    write_legislation(scratch_session, get_legislation_write(scratch_session))
-    scratch_session.commit()
+    seed_archive_legislation(scratch_session)
 
     legislation_alias_write = get_legislation_alias_write(scratch_session)
     write_legislation_aliases(scratch_session, legislation_alias_write)
