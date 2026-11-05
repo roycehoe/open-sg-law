@@ -5,6 +5,7 @@ from typing import Optional
 from sqlalchemy import update
 from sqlmodel import Session, col, func, select
 
+from database.legislation import Legislation
 from database.legislation_version import LegislationVersion
 from utils.legislation_version_update import LegislationVersionNewestUpdate
 
@@ -17,6 +18,13 @@ class LegislationVersionRow:
     version_date: Optional[date]
     captured_at: datetime
     is_newest: bool
+
+
+@dataclass(frozen=True)
+class VersionDocumentRow:
+    id: int
+    sso_code: str
+    source_response_id: int
 
 
 class CRUDLegislationVersion:
@@ -43,6 +51,18 @@ class CRUDLegislationVersion:
         return [
             LegislationVersionRow(*row) for row in self.session.exec(statement).all()
         ]
+
+    def get_version_document_rows(self) -> list[VersionDocumentRow]:
+        statement = (
+            select(
+                LegislationVersion.id,
+                Legislation.sso_code,
+                LegislationVersion.source_response_id,
+            )
+            .join(Legislation, col(Legislation.id) == LegislationVersion.legislation_id)
+            .order_by(Legislation.sso_code, col(LegislationVersion.id))
+        )
+        return [VersionDocumentRow(*row) for row in self.session.exec(statement).all()]
 
     def set_is_newest_bulk(
         self,

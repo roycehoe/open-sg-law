@@ -3,15 +3,19 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from crud.harvest_run import CRUDHarvestRun
 from crud.legislation import CRUDLegislation
+from crud.legislation_version import CRUDLegislationVersion
 from crud.source_response import CRUDSourceResponse
 from database.harvest_run import HarvestRun
 from database.legislation import Legislation
+from database.legislation_version import LegislationVersion
 from database.source_response import SourceResponse
 from enums import ResponseKind, SourceName
+from tests.legislation_version_seed import build_version
+from tests.source_seed import seed_sources
 
 _FIXTURES_DIRECTORY = Path(__file__).parent / "fixtures"
 IA1965_BODY = (_FIXTURES_DIRECTORY / "pdf" / "IA1965-p5-6.pdf").read_bytes()
@@ -105,3 +109,23 @@ def seed_cdx_answer(session: Session, harvest_run_id: int, body_text: str) -> No
         )
     )
     session.commit()
+
+
+def seed_ia1965_version(session: Session) -> int:
+    seed_sources(session)
+    seed_legislation(session, {"IA1965": "Interpretation Act 1965"})
+    seed_document(
+        session,
+        seed_harvest_run(session, SourceName.SSO),
+        SourceName.SSO,
+        IA1965_ORIGINAL_URL,
+        IA1965_BODY,
+        SSO_FETCHED_AT,
+    )
+    source_response_id = session.exec(select(SourceResponse.id)).one()
+    assert source_response_id is not None
+    CRUDLegislationVersion(session).add_many([build_version(source_response_id)])
+    session.commit()
+    legislation_version_id = session.exec(select(LegislationVersion.id)).one()
+    assert legislation_version_id is not None
+    return legislation_version_id
