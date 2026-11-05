@@ -8,3 +8,7 @@ class OpenSgLawTestGuardError(OpenSgLawError):
 
 class OpenSgLawWriteTargetError(OpenSgLawError):
     pass
+
+
+class OpenSgLawHarvestRunError(OpenSgLawError):
+    pass
