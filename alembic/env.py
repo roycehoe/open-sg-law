@@ -8,6 +8,7 @@ from sqlmodel import SQLModel
 
 import database.harvest_run  # noqa: F401
 import database.source  # noqa: F401
+import database.source_response  # noqa: F401
 from alembic import context
 from alembic.runtime.migration import MigrationContext
 from settings import settings

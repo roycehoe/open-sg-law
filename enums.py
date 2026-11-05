@@ -26,3 +26,10 @@ class HarvestRunStatus(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     HALTED = "HALTED"
     FAILED = "FAILED"
+
+
+class ResponseKind(StrEnum):
+    LISTING_PAGE = "LISTING_PAGE"
+    DOCUMENT = "DOCUMENT"
+    CDX_ANSWER = "CDX_ANSWER"
+    ROBOTS_FILE = "ROBOTS_FILE"
