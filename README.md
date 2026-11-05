@@ -57,6 +57,42 @@ Every source not in version 1 is listed in [docs/backlog.md](docs/backlog.md), w
 
 Folders appear as the build reaches them.
 
+## Tables
+
+| Table | One row per |
+|---|---|
+| `source` | source, with its publish status and, for SSO, its access state |
+| `harvest_run` | harvest run, with its counts and status |
+| `source_response` | fetched body, stored as received |
+| `legislation` | Act a stored listing page shows |
+| `legislation_version` | stored Act PDF read as a version |
+| `legislation_section` | section, Article or schedule of a version |
+| `legislation_alias` | name an Act is looked up by |
+| `bill` | bill found in the Hansard debates |
+| `bill_report` | Hansard report of a bill's debate |
+| `act_history_entry` | entry of an Act's Legislative History, with its bill |
+
+The site reads only the tables whose sources are all published, never `source_response` or `harvest_run`. [CLAUDE.md](CLAUDE.md#database-models) says what each column holds.
+
+## Scripts
+
+Each runs as `python -m scripts.<name>`, and each one that writes is a dry run unless `--commit`.
+
+| Script | What it does |
+|---|---|
+| `clear_sso_challenge` | sets a challenged SSO source back to untested |
+| `publish_source` | publishes or withdraws a source and changes the site role's grants to match |
+| `harvest_sso` | fetches one night's SSO listing pages and Act PDFs |
+| `harvest_archive` | fetches the Internet Archive's copies of the Act PDFs and listings |
+| `apply_legislation` | stores the Acts the listing pages show |
+| `apply_hansard_links` | stores the bills, their Hansard reports and the links from each Act's history |
+| `apply_legislation_versions` | stores a version for each Act PDF |
+| `apply_legislation_sections` | splits each version into sections |
+| `apply_legislation_aliases` | stores the names each Act is looked up by |
+| `coverage_figures` | logs the coverage figures, and writes nothing to the database |
+
+The harvests and the judgments wait on the permissions above, so no script has run against the sources yet. [CLAUDE.md](CLAUDE.md#scripts-directory) says what each script reads and writes.
+
 ## Setup
 
 Requires Python 3.11+, [Poetry](https://python-poetry.org) and Docker.

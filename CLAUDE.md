@@ -73,12 +73,133 @@ Filled as each phase lands.
 
 ### Database models
 
-Filled as each phase lands.
+Every enum column is `Text` with a check constraint, so a row loaded from the database holds a plain `str`: compare it through the enum member and format the column itself, never `.value`.
+
+- `source`: one row per source (`SourceName`), with its `publish_status` (PUBLISHED or UNPUBLISHED), the reason and time of the last change, and for SSO alone its `sso_access_state` (UNTESTED, SERVING or CHALLENGED) with its own reason and time. Migration 0002 seeds the six rows.
+- `harvest_run`: one row per harvest run of one source, with its counts (requests sent, bodies stored, bodies unchanged, failures), its start and finish times, its status (RUNNING, SUCCEEDED, HALTED or FAILED) and the halt or failure reason.
+- `source_response`: the raw table. One row per body fetched, stored once per requested URL and SHA-256, with the final URL, status code, content type, the body as text or as bytes (never both), its length and fetch time, its kind (listing page, document, CDX answer, robots file), its source and its harvest run.
+- `legislation`: one row per Act a stored listing page shows, keyed by its SSO code, with its title as the listing prints it, whether the newest listing still shows it, and the source of that listing.
+- `legislation_version`: one row per stored Act PDF that reads as a version. `printed_version_date` holds the date as the PDF prints it, and `version_date` our reading of it. It also holds the SSO URL's `_` value (`version_stamp`), the archive timestamp and CDX digest of an archive copy, the capture time, whether it is the Act's newest version, and the two character counts the section stage sets (`body_character_count` and `section_character_count`).
+- `legislation_section`: one row per section, Article or schedule of a version, in printed order. `printed_number` is the number or schedule label as printed, and the heading, Part heading, Division heading and text are kept as printed with the PDF's line breaks. `sso_anchor` is our guess at SSO's anchor (`#pr<number>-`). It also holds the first and last page, whether the section is repealed, whether it sits on a page with an image, and `search_vector`, Postgres's word index of the heading and text with a GIN index. A version holds each printed number once (`uq_legislation_section_legislation_version_id_printed_number`).
+- `legislation_alias`: one row per name an Act is looked up by: its full title as printed, its title without the year, and its SSO code (`AliasKind`). The lookup index is on `lower(alias)` and is not unique, since two Acts may share a title without its year.
+- `bill`: one row per bill the act-links plan found, with its title as printed, our `title_key` for matching, the first and last sitting dates of its debates and whether it passed.
+- `bill_report`: one row per Hansard report of a bill's debate, with the SPRS report id as printed, the openhansard.sg URL built from it, the report type, sitting date and title, and the Hansard row id for tracing only.
+- `act_history_entry`: one row per entry of an Act's Legislative History, from the act-links plan. `printed_text`, `printed_law_number`, `printed_title` and `printed_bill_number` are as printed, and the four reading and commencement dates are the plan's reading of them. `bill_id` and `bill_link_source` say which bill the entry links to and by which rule, and stay NULL when no rule found one.
+
+### Site role
+
+The site reads through the `NOLOGIN` role `open_sg_law_site` (ADR 0005). Migration 0012 creates it when `pg_roles` has none, grants it `USAGE` on `public`, and grants `SELECT` on the tables whose sources are published. `services/source_grants.py::TABLE_NAME_TO_SOURCES` names the sources each table draws from, and a table is granted only while all of them are published. `source` draws from none and is always granted. `source_response` and `harvest_run` are not in the map and are never granted. `scripts/publish_source.py` is the only other place that grants: it changes a status and grants and revokes in the same transaction, so the grants match the published sources. A change to `TABLE_NAME_TO_SOURCES` needs a new migration, and `tests/test_source_grants.py` fails until the migration's copy matches.
 
 ## `scripts/` directory
 
-Filled as each phase lands.
+Every script runs as `python -m scripts.<name>`. A write script is a dry run unless `--commit`: the dry run logs what it would do and ends with `Dry run: nothing written`. With `--commit` it calls `validate_can_write`, commits, and runs `VACUUM (ANALYZE)` on the tables it wrote.
+
+- `clear_sso_challenge.py`: sets a CHALLENGED SSO source back to UNTESTED, with `--reason`. Writes `source`. A dry run unless `--commit`.
+- `publish_source.py`: sets a source PUBLISHED, or UNPUBLISHED with `--withdraw`, with `--reason`, and in the same transaction grants and revokes the site role's `SELECT` to match. Writes `source` and the grants. A dry run unless `--commit`; the dry run logs the grants and revokes it would make.
+- `harvest_sso.py`: sends one night's SSO requests, inside 03:00 to 06:55 SGT, and stores each body. Writes `source_response`, `harvest_run` and the SSO access state on `source`. A dry run unless `--commit`; the dry run logs the SSO state and the stored counts and sends nothing.
+- `harvest_archive.py`: fetches the Internet Archive's CDX answer, the latest plain capture of each Act PDF and the listing captures, and stores each body. Writes `source_response` and `harvest_run`. A dry run unless `--commit`; the dry run logs the stored counts and sends nothing.
+- `apply_legislation.py`: reads the stored listing pages and stores the Acts they show. Writes `legislation`. A dry run unless `--commit`.
+- `apply_hansard_links.py`: reads the act-links plan (`--plan-file`) and the Hansard report export (`--report-export-file`), both kept outside git, and the stored `legislation` rows. The dry run writes the plan to `--plan-output` for review. The commit builds the plan again, refuses unless it equals the reviewed file, and writes `bill`, `bill_report` and `act_history_entry` in one transaction.
+- `apply_legislation_versions.py`: reads the stored Act PDFs and CDX answers and builds one version per PDF, marking each Act's newest. Writes `legislation_version`. A dry run unless `--commit`.
+- `apply_legislation_sections.py`: parses each stored version's PDF into sections, one transaction per version, and lists each version it cannot parse with the reason. Writes `legislation_section` and the two character counts on `legislation_version`. A dry run unless `--commit`.
+- `apply_legislation_aliases.py`: reads the stored `legislation` rows and stores each Act's aliases. Writes `legislation_alias`. A dry run unless `--commit`.
+- `coverage_figures.py`: read only. Logs the coverage figures for versions, sections and Hansard links; `--output` also writes them to a file under `docs/figures/`, and refuses one that exists.
 
 ## Module structure
 
-Filled as each phase lands.
+```
+open-sg-law/
+│
+├── settings.py                      # AppSettings: DATABASE_URL and the source base URLs
+├── enums.py                         # SourceName, PublishStatus, SsoAccessState, HarvestRunStatus, ResponseKind, SsoAnswer, ActHistoryEntryKind, BillLinkSource, ActHistoryDefect, LegislationSectionKind, AliasKind
+├── exceptions.py                    # OpenSgLawError and every subclass
+├── logs.py                          # Loguru logger setup
+│
+├── schemas/                         # Pydantic models of answers and input files
+│   ├── act_link_plan.py             # ActLinkPlan: the act-links plan file from hansard-scraper
+│   ├── cdx_answer.py                # CdxAnswer: an Internet Archive CDX answer
+│   ├── hansard_link_plan.py         # HansardLinkPlan: the reviewed plan file of apply_hansard_links
+│   ├── hansard_report_export.py     # HansardReportExport: the Hansard report export file
+│   └── source_http_response.py      # SourceHttpResponse: one HTTP answer as every gateway returns it
+│
+├── gateway/                         # HTTP calls to the sources
+│   ├── http.py                      # CrawlPacer per host, paced_request, send_with_retry, one user agent
+│   ├── sso.py                       # SSO robots file, listing pages and Act PDFs; never retries, never follows a redirect
+│   ├── internet_archive.py          # CDX queries and capture fetches
+│   └── elitigation.py               # eLitigation listing and judgment pages
+│
+├── services/                        # Pure transforms and rules
+│   ├── sso_answer.py                # Judges an SSO answer: expected, failure, or a challenge that raises
+│   ├── sso_request.py               # The SSO window check and the Act PDF paths to fetch
+│   ├── harvest_run.py               # Harvest guards: one running run, consecutive failures, database size
+│   ├── source_response.py           # Decodes a body as text unless it is a PDF, and builds a source_response row
+│   ├── archive_capture.py           # CDX answer → the latest plain capture of each Act
+│   ├── legislation.py               # Stored listing pages → planned legislation rows
+│   ├── hansard_links.py             # Act-links plan + report export → the Hansard link plan
+│   ├── legislation_version.py       # Printed version date, archive capture and newest-version rules
+│   ├── legislation_section.py       # PDF lines → sections, Articles and schedules under Part and Division headings
+│   ├── legislation_alias.py         # Legislation rows → planned aliases
+│   └── source_grants.py             # TABLE_NAME_TO_SOURCES and the tables the site role may read
+│
+├── database/                        # SQLModel table definitions
+│   ├── init.py                      # Engine setup
+│   ├── source.py                    # Source
+│   ├── harvest_run.py               # HarvestRun
+│   ├── source_response.py           # SourceResponse: the raw table
+│   ├── legislation.py               # Legislation
+│   ├── legislation_version.py       # LegislationVersion
+│   ├── legislation_section.py       # LegislationSection, with its search vector
+│   ├── legislation_alias.py         # LegislationAlias
+│   ├── bill.py                      # Bill and BillReport
+│   └── act_history_entry.py         # ActHistoryEntry
+│
+├── crud/                            # Database reads and writes, one file per table
+│   ├── source.py
+│   ├── harvest_run.py
+│   ├── source_response.py
+│   ├── legislation.py
+│   ├── legislation_version.py
+│   ├── legislation_section.py
+│   ├── legislation_alias.py
+│   ├── bill.py
+│   ├── bill_report.py
+│   ├── act_history_entry.py
+│   ├── source_grant.py              # The site role's SELECT grants: read, grant, revoke
+│   ├── database_size.py             # The database's size in bytes
+│   └── vacuum.py                    # vacuum_count and VACUUM (ANALYZE) for a table the caller names
+│
+├── populate/                        # Pipeline stages: gateway + services + crud
+│   ├── sso_responses.py             # The SSO harvest stage, with its window and challenge guards
+│   ├── archive_responses.py         # The Internet Archive harvest stage
+│   ├── legislation.py               # Plans and writes legislation rows from stored listings
+│   ├── hansard_links.py             # Plans and writes the Hansard link tables in one transaction
+│   ├── legislation_versions.py      # Plans and writes versions from stored PDFs
+│   ├── legislation_sections.py      # Parses and writes the sections of each version
+│   ├── legislation_aliases.py       # Plans and writes aliases
+│   ├── coverage_figures.py          # Reads the coverage figures
+│   └── written_tables.py            # VACUUM (ANALYZE) the tables a write script wrote, and check the count rose
+│
+├── utils/                           # Shared pure functions
+│   ├── write_target.py              # validate_can_write: refuses a local database off port 5436
+│   ├── sso_act_url.py               # Reads an SSO Act PDF URL: its code and version stamp, or None for a dated copy
+│   ├── sso_listing.py               # Parses an SSO listing page into rows and its page index
+│   ├── openhansard_url.py           # Builds an openhansard.sg report URL as the site does
+│   ├── pdf_text.py                  # PDF → lines with bold and margin marks, and images per page
+│   ├── legislation_update.py        # LegislationUpdate: one legislation row's change, for a bulk update
+│   └── legislation_version_update.py  # LegislationVersionNewestUpdate: one version's newest flag, for a bulk update
+│
+├── scripts/                         # Supervised scripts, run as modules
+│   ├── clear_sso_challenge.py
+│   ├── publish_source.py
+│   ├── harvest_sso.py
+│   ├── harvest_archive.py
+│   ├── apply_legislation.py
+│   ├── apply_hansard_links.py
+│   ├── apply_legislation_versions.py
+│   ├── apply_legislation_sections.py
+│   ├── apply_legislation_aliases.py
+│   └── coverage_figures.py
+│
+├── alembic/versions/                # Hand-written migrations 0001 to 0012
+└── tests/                           # Tests on the scratch database, fixtures and their SOURCES.md
+```
