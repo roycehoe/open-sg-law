@@ -28,3 +28,7 @@ class OpenSgLawReasonError(OpenSgLawError):
 
 class OpenSgLawSourceRowError(OpenSgLawError):
     pass
+
+
+class OpenSgLawGatewayError(OpenSgLawError):
+    pass
