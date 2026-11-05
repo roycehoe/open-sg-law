@@ -1,9 +1,11 @@
 import argparse
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from sqlmodel import Session
 
 from crud.source import CRUDSource
+from crud.source_grant import CRUDSourceGrant
 from database.init import engine
 from database.source import Source
 from enums import PublishStatus, SourceName
@@ -14,8 +16,78 @@ from exceptions import (
 )
 from logs import logger
 from populate.written_tables import vacuum_analyze_written_tables
+from services.source_grants import SITE_ROLE_NAME, get_table_names_to_grant
 from settings import settings
 from utils.write_target import validate_can_write
+
+_SELECT_PRIVILEGE = "SELECT"
+_PUBLIC_SCHEMA = "public"
+
+
+@dataclass(frozen=True)
+class SiteGrantChange:
+    table_names_to_grant: list[str]
+    table_names_to_revoke: list[str]
+
+
+def _get_published_sources(
+    sources: list[Source], source_name: SourceName, publish_status: PublishStatus
+) -> frozenset[SourceName]:
+    source_name_to_publish_status = {
+        **{
+            SourceName(source.name): PublishStatus(source.publish_status)
+            for source in sources
+        },
+        source_name: publish_status,
+    }
+    return frozenset(
+        name
+        for name, status in source_name_to_publish_status.items()
+        if status == PublishStatus.PUBLISHED
+    )
+
+
+def _get_site_grant_change(
+    session: Session, published_sources: frozenset[SourceName]
+) -> SiteGrantChange:
+    table_names_to_grant = get_table_names_to_grant(published_sources)
+    granted_table_names = CRUDSourceGrant(
+        session
+    ).get_table_names_by_grantee_and_privilege_type_and_table_schema(
+        SITE_ROLE_NAME, _SELECT_PRIVILEGE, _PUBLIC_SCHEMA
+    )
+    return SiteGrantChange(
+        table_names_to_grant=[
+            table_name
+            for table_name in table_names_to_grant
+            if table_name not in granted_table_names
+        ],
+        table_names_to_revoke=[
+            table_name
+            for table_name in granted_table_names
+            if table_name not in table_names_to_grant
+        ],
+    )
+
+
+def _log_site_grant_change(site_grant_change: SiteGrantChange) -> None:
+    for table_name in site_grant_change.table_names_to_grant:
+        logger.info(f"Would grant SELECT on {table_name} to {SITE_ROLE_NAME}")
+    for table_name in site_grant_change.table_names_to_revoke:
+        logger.info(f"Would revoke SELECT on {table_name} from {SITE_ROLE_NAME}")
+
+
+def _sync_site_grants(session: Session, site_grant_change: SiteGrantChange) -> None:
+    for table_name in site_grant_change.table_names_to_grant:
+        CRUDSourceGrant(session).grant_select(
+            _PUBLIC_SCHEMA, table_name, SITE_ROLE_NAME
+        )
+        logger.info(f"Granted SELECT on {table_name} to {SITE_ROLE_NAME}")
+    for table_name in site_grant_change.table_names_to_revoke:
+        CRUDSourceGrant(session).revoke_select(
+            _PUBLIC_SCHEMA, table_name, SITE_ROLE_NAME
+        )
+        logger.info(f"Revoked SELECT on {table_name} from {SITE_ROLE_NAME}")
 
 
 def publish_source(
@@ -31,6 +103,7 @@ def publish_source(
         PublishStatus.UNPUBLISHED if is_withdrawal else PublishStatus.PUBLISHED
     )
     with Session(engine) as session:
+        sources = CRUDSource(session).get_all_for_update()
         source = CRUDSource(session).get_by_name_for_update(source_name)
         if source is None:
             raise OpenSgLawSourceRowError(
@@ -43,13 +116,19 @@ def publish_source(
         logger.info(
             f"{source_name.value} goes from {source.publish_status} to {publish_status.value}: {reason}"
         )
+        site_grant_change = _get_site_grant_change(
+            session,
+            _get_published_sources(sources, source_name, publish_status),
+        )
         if not is_commit:
+            _log_site_grant_change(site_grant_change)
             logger.info("Dry run: nothing written")
             return
         source.publish_status = publish_status
         source.publish_status_reason = reason
         source.publish_status_changed_at = datetime.now(timezone.utc)
         CRUDSource(session).update(source)
+        _sync_site_grants(session, site_grant_change)
         session.commit()
         logger.info("Committed")
         vacuum_analyze_written_tables(

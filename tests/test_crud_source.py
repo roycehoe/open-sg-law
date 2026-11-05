@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
 
+import pytest
 from sqlalchemy.engine import Engine
-from sqlmodel import Session
+from sqlalchemy.exc import OperationalError
+from sqlmodel import Session, select
 
 from crud.source import CRUDSource
+from database.source import Source
 from enums import SourceName, SsoAccessState
 from tests.source_seed import seed_sources
 
@@ -26,6 +29,23 @@ def test_get_all_returns_the_six_rows(scratch_session: Session) -> None:
     sources = CRUDSource(scratch_session).get_all()
 
     assert [source.name for source in sources] == list(SourceName)
+
+
+def test_get_all_for_update_locks_every_row(
+    scratch_engine: Engine, scratch_session: Session
+) -> None:
+    seed_sources(scratch_session)
+
+    sources = CRUDSource(scratch_session).get_all_for_update()
+
+    assert [source.name for source in sources] == list(SourceName)
+    with Session(scratch_engine) as session:
+        with pytest.raises(OperationalError, match="could not obtain lock"):
+            session.exec(
+                select(Source)
+                .where(Source.name == SourceName.ELITIGATION)
+                .with_for_update(nowait=True)
+            ).all()
 
 
 def test_an_updated_state_is_visible_after_commit_in_a_new_session(
