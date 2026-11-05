@@ -48,3 +48,7 @@ class OpenSgLawHarvestHaltError(OpenSgLawError):
 
 class OpenSgLawSsoWindowError(OpenSgLawError):
     pass
+
+
+class OpenSgLawCdxAnswerError(OpenSgLawError):
+    pass
