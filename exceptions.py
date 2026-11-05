@@ -36,3 +36,7 @@ class OpenSgLawGatewayError(OpenSgLawError):
 
 class OpenSgLawSsoChallengeError(OpenSgLawError):
     pass
+
+
+class OpenSgLawListingParseError(OpenSgLawError):
+    pass
