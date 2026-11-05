@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, cast
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, col, func, select
@@ -19,6 +19,14 @@ class ListingPageRow:
     fetched_at: datetime
     source: SourceName
     harvest_run_id: int
+
+
+@dataclass(frozen=True)
+class DocumentRow:
+    id: int
+    requested_url: str
+    fetched_at: datetime
+    source: SourceName
 
 
 class CRUDSourceResponse:
@@ -92,3 +100,43 @@ class CRUDSourceResponse:
             .order_by(SourceResponse.harvest_run_id, col(SourceResponse.id))
         )
         return [ListingPageRow(*row) for row in self.session.exec(statement).all()]
+
+    def get_document_rows_by_kind_and_status_code_and_body_bytes_not_null(
+        self, kind: ResponseKind, status_code: int
+    ) -> list[DocumentRow]:
+        statement = (
+            select(
+                SourceResponse.id,
+                SourceResponse.requested_url,
+                SourceResponse.fetched_at,
+                SourceResponse.source,
+            )
+            .where(SourceResponse.kind == kind)
+            .where(SourceResponse.status_code == status_code)
+            .where(col(SourceResponse.body_bytes).is_not(None))
+            .order_by(col(SourceResponse.id))
+        )
+        return [DocumentRow(*row) for row in self.session.exec(statement).all()]
+
+    def get_body_bytes_by_id(self, source_response_id: int) -> bytes:
+        statement = (
+            select(SourceResponse.body_bytes)
+            .where(col(SourceResponse.id) == source_response_id)
+            .where(col(SourceResponse.body_bytes).is_not(None))
+        )
+        return cast(bytes, self.session.exec(statement).one())
+
+    def get_body_texts_by_source_and_kind_and_status_code(
+        self, source: SourceName, kind: ResponseKind, status_code: int
+    ) -> list[str]:
+        statement = (
+            select(SourceResponse.body_text)
+            .where(SourceResponse.source == source)
+            .where(SourceResponse.kind == kind)
+            .where(SourceResponse.status_code == status_code)
+            .where(col(SourceResponse.body_text).is_not(None))
+            .order_by(col(SourceResponse.id))
+        )
+        return [
+            cast(str, body_text) for body_text in self.session.exec(statement).all()
+        ]

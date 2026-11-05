@@ -1,10 +1,25 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Optional
 
-from services.legislation_version import PrintedVersionDate, get_printed_version_date
+from crud.legislation_version import LegislationVersionRow
+from services.legislation_version import (
+    ArchiveCapture,
+    PrintedVersionDate,
+    get_archive_capture,
+    get_newest_version_updates,
+    get_printed_version_date,
+)
+from utils.legislation_version_update import LegislationVersionNewestUpdate
 from utils.pdf_text import PdfPage, get_pdf_pages
 
 _FIXTURE_DIRECTORY = Path(__file__).parent / "fixtures" / "pdf"
+_IA1965_ORIGINAL_URL = "https://sso.agc.gov.sg/Act/IA1965?ViewType=Pdf&_=20251216194555"
+_IA1965_ARCHIVE_URL = (
+    f"https://web.archive.org/web/20260101041857id_/{_IA1965_ORIGINAL_URL}"
+)
+_EARLIER_CAPTURED_AT = datetime(2026, 1, 1, 4, 18, 57, tzinfo=timezone.utc)
+_LATER_CAPTURED_AT = datetime(2026, 11, 5, 19, 0, tzinfo=timezone.utc)
 
 
 def _get_pages(file_name: str) -> list[PdfPage]:
@@ -33,3 +48,64 @@ def test_a_footer_date_gives_the_date_when_no_line_says_version_in_force() -> No
 
 def test_no_pages_give_no_date() -> None:
     assert get_printed_version_date([]) is None
+
+
+def test_an_archive_url_gives_its_timestamp_and_original_url() -> None:
+    assert get_archive_capture(_IA1965_ARCHIVE_URL) == ArchiveCapture(
+        timestamp="20260101041857", original_url=_IA1965_ORIGINAL_URL
+    )
+
+
+def test_an_sso_url_is_not_an_archive_capture() -> None:
+    assert get_archive_capture(_IA1965_ORIGINAL_URL) is None
+
+
+def _build_row(
+    row_id: int,
+    legislation_id: int,
+    version_date: Optional[date],
+    captured_at: datetime,
+    is_newest: bool,
+) -> LegislationVersionRow:
+    return LegislationVersionRow(
+        id=row_id,
+        legislation_id=legislation_id,
+        source_response_id=row_id,
+        version_date=version_date,
+        captured_at=captured_at,
+        is_newest=is_newest,
+    )
+
+
+def test_the_later_printed_date_is_newest_whatever_the_capture_time() -> None:
+    legislation_version_rows = [
+        _build_row(1, 1, date(2024, 11, 25), _EARLIER_CAPTURED_AT, True),
+        _build_row(2, 1, date(2021, 12, 31), _LATER_CAPTURED_AT, False),
+    ]
+
+    assert get_newest_version_updates(legislation_version_rows) == []
+
+
+def test_an_equal_printed_date_goes_to_the_later_capture() -> None:
+    legislation_version_rows = [
+        _build_row(1, 1, date(2024, 11, 25), _EARLIER_CAPTURED_AT, True),
+        _build_row(2, 1, date(2024, 11, 25), _LATER_CAPTURED_AT, False),
+    ]
+
+    assert get_newest_version_updates(legislation_version_rows) == [
+        LegislationVersionNewestUpdate(id=1, is_newest=False),
+        LegislationVersionNewestUpdate(id=2, is_newest=True),
+    ]
+
+
+def test_a_version_with_no_printed_date_loses_to_one_with_a_date() -> None:
+    legislation_version_rows = [
+        _build_row(1, 1, None, _LATER_CAPTURED_AT, False),
+        _build_row(2, 1, date(2021, 12, 31), _EARLIER_CAPTURED_AT, False),
+        _build_row(3, 2, None, _EARLIER_CAPTURED_AT, False),
+    ]
+
+    assert get_newest_version_updates(legislation_version_rows) == [
+        LegislationVersionNewestUpdate(id=2, is_newest=True),
+        LegislationVersionNewestUpdate(id=3, is_newest=True),
+    ]
