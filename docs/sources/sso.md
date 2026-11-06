@@ -50,4 +50,6 @@ The SSO stage asks for, in order:
 3. Listing pages 1 onward, up to the page count page 0 prints. A failed page is skipped.
 4. The Act PDFs. A PDF whose stored copy already carries the listing's version stamp is not requested. Acts never stored come first, then the Acts whose newest stored copy is oldest.
 
+The stored copy may be an Internet Archive capture, since the stage reads the stored PDFs of both sources. The archive harvest therefore runs before the first SSO night, so SSO serves only the Acts whose version stamp changed after the archive's newest capture (Royce, 7 November 2026).
+
 Three failures in a row halt the run. So does a database past 10 GB, checked before the first request and after each answer. A night that reaches 06:55 with work left ends as SUCCEEDED, and the next night carries on. Subsidiary legislation is not requested yet.
