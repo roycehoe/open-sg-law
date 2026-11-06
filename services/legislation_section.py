@@ -19,6 +19,8 @@ _OPENING_QUOTE = "“"
 _CLOSING_QUOTE = "”"
 # NOTE: CPFTA2003's text layer closes a quotation with U+02EE, which prints like ”.
 _MODIFIER_LETTER_CLOSING_QUOTE = "ˮ"
+# NOTE: LEOMA2024's text layer closes a quotation with two U+2019 where ” belongs.
+_DOUBLED_SINGLE_CLOSING_QUOTE = "’’"
 _BODY_END_LINES = frozenset({"LEGISLATIVE HISTORY", "COMPARATIVE TABLE"})
 _CONTINUED_SUFFIX = "— continued"
 _SSO_ANCHOR_FORMAT = "#pr{printed_number}-"
@@ -277,7 +279,8 @@ class _SectionWalk:
             self.quote_depth
             + line.text.count(_OPENING_QUOTE)
             - line.text.count(_CLOSING_QUOTE)
-            - line.text.count(_MODIFIER_LETTER_CLOSING_QUOTE),
+            - line.text.count(_MODIFIER_LETTER_CLOSING_QUOTE)
+            - line.text.count(_DOUBLED_SINGLE_CLOSING_QUOTE),
         )
         if quote_depth_before > 0:
             self._read_quoted_line(line, page_number, line_index)

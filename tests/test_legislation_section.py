@@ -17,6 +17,7 @@ _GAMBLING_REGULATORY_AUTHORITY_ACT_CODE = "GRASA2022"
 _ELECTRIC_VEHICLES_CHARGING_ACT_CODE = "EVCA2022"
 _CONSUMER_PROTECTION_ACT_CODE = "CPFTA2003"
 _CUSTOMS_ACT_CODE = "CA1960"
+_LAW_ENFORCEMENT_ACT_CODE = "LEOMA2024"
 _INTERPRETATION_ACT_FIXTURE_PAGE_COUNT = 2
 _GAMBLING_DUTIES_ACT_FIXTURE_PAGE_COUNT = 3
 
@@ -156,6 +157,15 @@ def test_a_quotation_closed_by_a_modifier_letter_double_apostrophe_is_closed() -
         "“This is not a bill. You are not required to pay any money.ˮ,"
         in parsed_legislation.sections[2].text
     )
+
+
+def test_a_quotation_closed_by_two_right_single_quotes_is_closed() -> None:
+    pdf_pages = _get_pages("LEOMA2024-p26-30.pdf")
+
+    parsed_legislation = get_parsed_legislation(_LAW_ENFORCEMENT_ACT_CODE, pdf_pages)
+
+    assert _get_printed_numbers(parsed_legislation.sections) == ["13", "14", "15"]
+    assert "disorder, and take P’’; and" in parsed_legislation.sections[0].text
 
 
 def test_two_copies_of_the_same_pages_print_a_section_twice() -> None:
