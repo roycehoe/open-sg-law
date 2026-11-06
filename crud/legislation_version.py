@@ -67,6 +67,19 @@ class CRUDLegislationVersion:
         )
         return self.session.exec(statement).one()
 
+    def get_count_by_is_newest_and_section_character_count_not_null_and_legislation_is_in_newest_listing(
+        self, is_newest: bool, is_in_newest_listing: bool
+    ) -> int:
+        statement = (
+            select(func.count())
+            .select_from(LegislationVersion)
+            .join(Legislation, col(Legislation.id) == LegislationVersion.legislation_id)
+            .where(col(LegislationVersion.is_newest).is_(is_newest))
+            .where(col(LegislationVersion.section_character_count).is_not(None))
+            .where(col(Legislation.is_in_newest_listing).is_(is_in_newest_listing))
+        )
+        return self.session.exec(statement).one()
+
     def get_legislation_counts_by_source(self) -> list[SourceCountRow]:
         statement = (
             select(

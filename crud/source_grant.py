@@ -29,6 +29,21 @@ class CRUDSourceGrant:
             .all()
         )
 
+    def has_privilege_by_grantee_and_table_name_and_privilege_type(
+        self, grantee: str, table_name: str, privilege_type: str
+    ) -> bool:
+        statement = text(
+            "SELECT has_table_privilege(:grantee, :table_name, :privilege_type)"
+        )
+        return self.session.execute(
+            statement,
+            {
+                "grantee": grantee,
+                "table_name": table_name,
+                "privilege_type": privilege_type,
+            },
+        ).scalar_one()
+
     def _get_quoted_identifier(self, identifier: str) -> str:
         return self.session.get_bind().dialect.identifier_preparer.quote(identifier)
 

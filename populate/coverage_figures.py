@@ -12,11 +12,21 @@ from crud.legislation_version import (
     SourceCountRow,
     VersionYearCountRow,
 )
+from crud.source_grant import CRUDSourceGrant
 from services.coverage_figures import VersionTextShare, build_text_share_figures
+from services.source_grants import SITE_ROLE_NAME
+
+_SELECT_PRIVILEGE = "SELECT"
+_SECTION_TABLE_NAMES = ("legislation", "legislation_version", "legislation_section")
 
 
 @dataclass(frozen=True)
 class CoverageFigures:
+    current_legislation_count: int
+    parsed_current_legislation_count: int
+    is_section_text_readable: bool
+    readable_current_legislation_count: int
+    readable_current_legislation_share: Optional[float]
     legislation_count: int
     legislation_without_version_count: int
     source_counts: list[SourceCountRow]
@@ -44,7 +54,35 @@ def get_coverage_figures(session: Session) -> CoverageFigures:
         session
     ).get_version_year_counts_by_is_newest(True)
     text_share_figures = build_text_share_figures(character_count_rows)
+    current_legislation_count = CRUDLegislation(
+        session
+    ).get_count_by_is_in_newest_listing(True)
+    parsed_current_legislation_count = CRUDLegislationVersion(
+        session
+    ).get_count_by_is_newest_and_section_character_count_not_null_and_legislation_is_in_newest_listing(
+        True, True
+    )
+    is_section_text_readable = all(
+        CRUDSourceGrant(
+            session
+        ).has_privilege_by_grantee_and_table_name_and_privilege_type(
+            SITE_ROLE_NAME, table_name, _SELECT_PRIVILEGE
+        )
+        for table_name in _SECTION_TABLE_NAMES
+    )
+    readable_current_legislation_count = (
+        parsed_current_legislation_count if is_section_text_readable else 0
+    )
     return CoverageFigures(
+        current_legislation_count=current_legislation_count,
+        parsed_current_legislation_count=parsed_current_legislation_count,
+        is_section_text_readable=is_section_text_readable,
+        readable_current_legislation_count=readable_current_legislation_count,
+        readable_current_legislation_share=(
+            None
+            if current_legislation_count == 0
+            else readable_current_legislation_count / current_legislation_count
+        ),
         legislation_count=CRUDLegislation(session).get_count(),
         legislation_without_version_count=CRUDLegislation(
             session

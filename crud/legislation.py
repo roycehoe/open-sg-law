@@ -30,6 +30,14 @@ class CRUDLegislation:
         statement = select(func.count()).select_from(Legislation)
         return self.session.exec(statement).one()
 
+    def get_count_by_is_in_newest_listing(self, is_in_newest_listing: bool) -> int:
+        statement = (
+            select(func.count())
+            .select_from(Legislation)
+            .where(col(Legislation.is_in_newest_listing).is_(is_in_newest_listing))
+        )
+        return self.session.exec(statement).one()
+
     def get_count_by_legislation_version_none(self) -> int:
         statement = (
             select(func.count())

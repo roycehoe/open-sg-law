@@ -21,7 +21,12 @@ def _get_percent(share: Optional[float]) -> str:
 
 
 def _build_lines(coverage_figures: CoverageFigures) -> list[str]:
-    lines = [f"Acts listed: {coverage_figures.legislation_count}"]
+    lines = [
+        f"Headline, current Acts the site can read section by section: {coverage_figures.readable_current_legislation_count} of {coverage_figures.current_legislation_count} ({_get_percent(coverage_figures.readable_current_legislation_share)})",
+        f"Current Acts with a parsed newest version: {coverage_figures.parsed_current_legislation_count}",
+        f"Site role reads legislation, versions and sections: {'yes' if coverage_figures.is_section_text_readable else 'no'}",
+        f"Acts listed: {coverage_figures.legislation_count}",
+    ]
     lines.extend(
         f"Acts with a version from {source_count.source}: {source_count.legislation_count}"
         for source_count in coverage_figures.source_counts

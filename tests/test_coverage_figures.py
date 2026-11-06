@@ -7,12 +7,14 @@ from sqlmodel import Session
 import scripts.coverage_figures as coverage_figures_script
 from crud.legislation_section import CRUDLegislationSection
 from crud.legislation_version import CRUDLegislationVersion
+from crud.source_grant import CRUDSourceGrant
 from database.legislation_section import LegislationSection
 from enums import LegislationSectionKind
 from exceptions import OpenSgLawWriteCheckError
 from populate.coverage_figures import get_coverage_figures
 from scripts.coverage_figures import coverage_figures
 from services.coverage_figures import VersionTextShare
+from services.source_grants import SITE_ROLE_NAME
 from tests.document_seed import seed_ia1965_version, seed_legislation
 from tests.hansard_link_seed import add_competition_bill_and_history
 from tests.source_seed import seed_sources
@@ -22,7 +24,11 @@ _LEGISLATION_COUNT = 2
 _TEXT_SHARE = 0.95
 _BODY_CHARACTER_COUNT = 200
 _SECTION_CHARACTER_COUNT = 190
+_HEADLINE_SHARE = 0.5
 _EXPECTED_LINES = [
+    "Headline, current Acts the site can read section by section: 0 of 2 (0.00%)",
+    "Current Acts with a parsed newest version: 1",
+    "Site role reads legislation, versions and sections: no",
     "Acts listed: 2",
     "Acts with a version from SSO: 1",
     "Acts with no version: 1",
@@ -55,7 +61,7 @@ class _LogRecorder:
 
 @pytest.fixture
 def log_recorder(
-    scratch_engine: Engine, monkeypatch: pytest.MonkeyPatch
+    scratch_engine: Engine, site_role_schema: str, monkeypatch: pytest.MonkeyPatch
 ) -> _LogRecorder:
     recorder = _LogRecorder()
     monkeypatch.setattr(coverage_figures_script, "engine", scratch_engine)
@@ -103,10 +109,18 @@ def _seed_figures(session: Session) -> None:
     session.commit()
 
 
-def test_the_figures_hold_the_seeded_counts(scratch_session: Session) -> None:
+def test_the_figures_hold_the_seeded_counts(
+    scratch_session: Session, site_role_schema: str
+) -> None:
     _seed_figures(scratch_session)
 
     figures = get_coverage_figures(scratch_session)
+
+    assert figures.current_legislation_count == _LEGISLATION_COUNT
+    assert figures.parsed_current_legislation_count == 1
+    assert not figures.is_section_text_readable
+    assert figures.readable_current_legislation_count == 0
+    assert figures.readable_current_legislation_share == 0
 
     assert figures.legislation_count == _LEGISLATION_COUNT
     assert figures.legislation_without_version_count == 1
@@ -118,6 +132,39 @@ def test_the_figures_hold_the_seeded_counts(scratch_session: Session) -> None:
     assert figures.image_page_section_count == 1
     assert figures.bill_count == 1
     assert figures.linked_history_entry_count == 1
+
+
+def test_the_headline_counts_parsed_acts_once_the_site_role_reads_the_section_tables(
+    scratch_session: Session, site_role_schema: str
+) -> None:
+    _seed_figures(scratch_session)
+    for table_name in ("legislation", "legislation_version", "legislation_section"):
+        CRUDSourceGrant(scratch_session).grant_select(
+            site_role_schema, table_name, SITE_ROLE_NAME
+        )
+    scratch_session.commit()
+
+    figures = get_coverage_figures(scratch_session)
+
+    assert figures.is_section_text_readable
+    assert figures.readable_current_legislation_count == 1
+    assert figures.readable_current_legislation_share == _HEADLINE_SHARE
+
+
+def test_the_headline_counts_nothing_while_one_section_table_is_not_granted(
+    scratch_session: Session, site_role_schema: str
+) -> None:
+    _seed_figures(scratch_session)
+    for table_name in ("legislation", "legislation_version"):
+        CRUDSourceGrant(scratch_session).grant_select(
+            site_role_schema, table_name, SITE_ROLE_NAME
+        )
+    scratch_session.commit()
+
+    figures = get_coverage_figures(scratch_session)
+
+    assert not figures.is_section_text_readable
+    assert figures.readable_current_legislation_count == 0
 
 
 def test_the_lines_hold_the_seeded_counts(
@@ -155,7 +202,7 @@ def test_an_existing_output_path_raises_and_keeps_its_text(
 
 
 def test_a_database_with_no_versions_gives_no_text_share(
-    scratch_session: Session,
+    scratch_session: Session, site_role_schema: str
 ) -> None:
     seed_sources(scratch_session)
     seed_legislation(scratch_session, {"IA1965": "Interpretation Act 1965"})
@@ -165,3 +212,4 @@ def test_a_database_with_no_versions_gives_no_text_share(
     assert figures.overall_text_share is None
     assert figures.lowest_text_shares == []
     assert figures.legislation_without_version_count == 1
+    assert figures.parsed_current_legislation_count == 0

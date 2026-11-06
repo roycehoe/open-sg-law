@@ -42,8 +42,11 @@ All code follows [STYLE.md](../STYLE.md), copied from hansard-scraper with its d
 
 `python -m scripts.coverage_figures` is the measure for the legislation objectives (1 and 2). It logs the numbers below, and `--output` keeps them in `docs/figures/`. No figures exist yet, because every harvest and write run is parked (`plans/open-sg-law-parked.md`), so nothing is published. When a figure moves, replace the current figure in the same change and keep the earlier one in a history file.
 
+The headline is the first line: the share of Acts on SSO's newest listing whose newest version is parsed into sections and readable by the site role. It counts an Act only once its sections are parsed and the site role can read `legislation`, `legislation_version` and `legislation_section`, so it covers fetching, parsing and the publish gate in one number. Royce adopted it on 6 November 2026.
+
 | Figure | What it counts |
 |---|---|
+| Headline: current Acts the site can read section by section | Acts on the newest listing whose newest version has sections, while the site role reads all three section tables, out of all Acts on the newest listing |
 | Acts with a consolidated version | By source (SSO, Internet Archive, eGazette), and by the year of the newest version |
 | Sections parsed | Sections stored, and the share of each PDF's text that lands in a section |
 | History entries linked | Legislative history entries linked to a Hansard report |
