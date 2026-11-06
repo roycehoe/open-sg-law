@@ -112,6 +112,17 @@ def test_a_repealed_section_line_has_a_bold_number_in_the_advtt_font() -> None:
     assert not repealed_line.is_bold
 
 
+def test_a_footnote_asterisk_before_a_bold_number_joins_the_bold_prefix() -> None:
+    pdf_page = _get_pages("CONS1963-article-3.pdf")[2]
+
+    article_line = _get_line(
+        pdf_page, "*3. Singapore shall be a sovereign republic to be known as the"
+    )
+
+    assert article_line.bold_prefix == "*3."
+    assert not article_line.is_bold
+
+
 @pytest.mark.parametrize("font_name", _BOLD_FONT_NAMES)
 def test_a_bold_font_name_is_bold(font_name: str) -> None:
     assert is_bold_font(font_name)

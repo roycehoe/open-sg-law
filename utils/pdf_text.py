@@ -15,6 +15,7 @@ _HEADER_BOTTOM_POINTS = 66
 _FOOTER_TOP_POINTS = 650
 _PAGE_NUMBER_TOP_POINTS = 638.8
 _X_TOLERANCE_POINTS = 1.5
+_FOOTNOTE_MARKER = "*"
 
 
 @dataclass(frozen=True)
@@ -42,9 +43,13 @@ def is_bold_font(font_name: str) -> bool:
 def _get_bold_prefix(text: str, characters: list[dict[str, object]]) -> str:
     bold_character_count = 0
     for character in characters:
+        character_text = str(character["text"])
+        if bold_character_count == 0 and character_text == _FOOTNOTE_MARKER:
+            bold_character_count += len(character_text)
+            continue
         if not is_bold_font(str(character["fontname"])):
             break
-        bold_character_count += len(str(character["text"]))
+        bold_character_count += len(character_text)
 
     printed_character_count = 0
     for index, text_character in enumerate(text):

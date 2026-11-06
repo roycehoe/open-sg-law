@@ -6,7 +6,7 @@ from enums import LegislationSectionKind
 from exceptions import OpenSgLawSectionParseError
 from utils.pdf_text import PdfLine, PdfPage
 
-_SECTION_NUMBER_PATTERN = re.compile(r"^(\d+[A-Z]*)\.")
+_SECTION_NUMBER_PATTERN = re.compile(r"^\*?(\d+[A-Z]*)\.")
 _PART_PATTERN = re.compile(r"^PART \d+[A-Z]*$")
 _DIVISION_PATTERN = re.compile(r"^Division \d+[A-Z]* — ")
 _SCHEDULE_HEADING_PATTERN = re.compile(

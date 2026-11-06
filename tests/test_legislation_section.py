@@ -236,6 +236,19 @@ def test_the_articles_of_the_constitution_are_kind_article() -> None:
     assert parsed_legislation.sections[0].part_heading == "PART 1\nPRELIMINARY"
 
 
+def test_an_article_printed_after_a_footnote_asterisk_starts_its_own_row() -> None:
+    pdf_pages = _get_pages("CONS1963-article-3.pdf")
+
+    parsed_legislation = get_parsed_legislation(_CONSTITUTION_CODE, pdf_pages)
+    article_2, article_3 = parsed_legislation.sections[1:3]
+
+    assert _get_printed_numbers(parsed_legislation.sections) == ["1", "2", "3", "4"]
+    assert article_3.heading == "Republic of Singapore"
+    assert article_3.sso_anchor == "#pr3-"
+    assert article_3.text.startswith("*3. Singapore shall be a sovereign republic")
+    assert "sovereign republic" not in article_2.text
+
+
 def test_the_sections_of_an_act_stay_kind_section() -> None:
     pdf_pages = _get_pages("IA1965-p1-4.pdf")
 
