@@ -16,6 +16,7 @@ _GAMBLING_DUTIES_ACT_CODE = "GDA2022"
 _GAMBLING_REGULATORY_AUTHORITY_ACT_CODE = "GRASA2022"
 _ELECTRIC_VEHICLES_CHARGING_ACT_CODE = "EVCA2022"
 _CONSUMER_PROTECTION_ACT_CODE = "CPFTA2003"
+_CUSTOMS_ACT_CODE = "CA1960"
 _INTERPRETATION_ACT_FIXTURE_PAGE_COUNT = 2
 _GAMBLING_DUTIES_ACT_FIXTURE_PAGE_COUNT = 3
 
@@ -276,6 +277,20 @@ def test_repealed_sections_are_flagged_and_their_neighbours_are_not() -> None:
     assert not printed_number_to_section["2"].is_repealed
     assert not printed_number_to_section["4"].is_repealed
     assert not printed_number_to_section["6"].is_repealed
+
+
+def test_a_repealed_range_printed_as_one_line_is_one_row_flagged_repealed() -> None:
+    pdf_pages = _get_pages("CA1960-p58.pdf")
+
+    parsed_legislation = get_parsed_legislation(_CUSTOMS_ACT_CODE, pdf_pages)
+
+    assert _get_printed_numbers(parsed_legislation.sections) == ["69", "70", "78"]
+    assert parsed_legislation.sections[1].text == (
+        "70. to 77. [Repealed by Act 5 of 2015]"
+    )
+    assert parsed_legislation.sections[1].is_repealed
+    assert not parsed_legislation.sections[0].is_repealed
+    assert not parsed_legislation.sections[2].is_repealed
 
 
 def test_the_schedule_of_an_act_is_one_row_of_kind_schedule() -> None:

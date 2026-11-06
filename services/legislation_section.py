@@ -12,7 +12,9 @@ _DIVISION_PATTERN = re.compile(r"^Division \d+[A-Z]* — ")
 _SCHEDULE_HEADING_PATTERN = re.compile(
     r"^((?:[A-Z]+[ -])*SCHEDULE)(?: (\[(?:Repealed|Deleted) by [^\]]+\]))?$"
 )
-_REPEALED_PATTERN = re.compile(r"^\d+[A-Z]*\.\s*\[(?:Repealed|Deleted) by [^\]]+\]$")
+_REPEALED_PATTERN = re.compile(
+    r"^\d+[A-Z]*\.(?: to \d+[A-Z]*\.)?\s*\[(?:Repealed|Deleted) by [^\]]+\]$"
+)
 _OPENING_QUOTE = "“"
 _CLOSING_QUOTE = "”"
 # NOTE: CPFTA2003's text layer closes a quotation with U+02EE, which prints like ”.
