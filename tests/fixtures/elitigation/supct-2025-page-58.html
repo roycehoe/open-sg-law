@@ -1,0 +1,611 @@
+
+
+<!DOCTYPE html>
+
+<html xml:lang="en" >
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+
+
+    <title>SG Courts Judgments</title>
+
+    <link href="/gd/Content/css?v=Szdc2g0mrXSFrkmp6mRt-kKQvVFzv_HiuBUlYCDZSf81" rel="stylesheet"/>
+
+    <script src="/gd/bundles/modernizr?v=inCVuEFe6J4Q07A0AcRsbJic_UE5MwpRMNGcOtk94TE1"></script>
+
+    <script src="/gd/bundles/seamless?v=xYWPXPXMx7mDeYmhUdH7eVlHGqFffF6tYGfDQV2Wwhk1"></script>
+
+    <link href="/gd/Content/css/gdViewer?v=yAm9pe5oNflRwzebRIBadVvVlnthnQzzUUotXXR0Jzs1" rel="stylesheet"/>
+
+    <script src="/gd/Scripts/jquery-3.5.0.min.js"></script>
+
+
+</head>
+<body class="pt-0">
+    <div class="container">
+       
+        <div class="container ">
+    <div class="row headingborder">
+        <a class="heading" href="/gd/Home/Index">
+            <span class="heading">SG Courts Judgments</span>
+            <span>
+                <img class="headingafter" src="/gd/Content/themes/supct/bg-separator.png" alt="separator"/>
+            </span>
+        </a>
+    </div>
+</div>
+<br />
+
+<style>
+    .heading {
+        font-size: 1.3em; /*/5.1vw  1.3em*/
+        font-weight: 300 !important;
+        text-align: center;
+        display: block;
+        width: 80%;
+        margin: 0px auto 20px;
+        text-transform: uppercase;
+        line-height: 1.3em;
+        color: #4d4d4d;
+        text-decoration: none;
+        padding-top: 20px;
+    }
+    a:hover {
+        text-decoration: none;
+    }
+    .headingborder {
+        background-color: #ededed;
+        border-radius: 0 0 10px 10px;
+    }
+    .headingafter {
+        width: 122px;
+        height: 4px;
+        display: block;
+        margin: auto;
+        margin-top: 10px;
+    }
+    
+</style>
+
+        <div class="row">
+            <div class="col-lg-12" id="bodyContainer">
+                
+
+
+<div class="row">
+    <div class="col-12">
+        <div class="row justify-content-between">
+            <input data-val="true" data-val-number="The field CurrentPage must be a number." data-val-required="The CurrentPage field is required." id="hfCurrentPage" name="CurrentPage" type="hidden" value="58" />
+
+            <form class="col-12" id="gdlistForm">
+                
+                <input data-val="true" data-val-required="The Verbose field is required." id="hfVerbose" name="Verbose" type="hidden" value="False" />
+                <input id="hdnFilter" name="hdnFilter" type="hidden" value="SUPCT" />
+                <input id="hdnRefreshActionUrl" name="hdnRefreshActionUrl" type="hidden" value="/gd/Home/Index" />
+
+                <div class="form-row ">
+
+                    <div class="form-group col-xs-12 col-sm-12 col-md-8 col-lg-9 col-xl-9">
+                        <div class="form-row">
+                            <div class="form-group col-xs-12 col-sm-12 col-md-7 col-lg-6 ">
+                                <!--Search input group -->
+                                <div class="input-group" style="text-align: left">
+                                    <input class=" gd-list-ctrl form-control" data-html="true" data-placement="bottom" data-toggle="tooltip" id="search" name="SearchPhrase" placeholder="Type your search terms here" style="border: none" title="&lt;ul>&lt;li>Click on each set of catchwords to find cases with similar catchwords.&lt;/li>&lt;li>Typing your search terms without using quotation marks will include cases that contain each word typed in.&lt;/li>&lt;li>Use quotation marks (“”) to find only cases containing the exact phrase typed in, eg, “passing off”. &lt;/li>&lt;li>Click on How to search (Advanced search) for more advanced search options.&lt;/li> &lt;/ul> " type="text" value="" />
+                                    <div class="input-group-append align-items-center pr-2">
+
+                                        <button type="submit" class="btn in-input-group" id="btnSearch">
+                                            <img class="img-fluid" style="margin-top: -5px; width: 20px; height: 20px;" src="/gd/images/gd-dashboard/search.svg" alt="Search" />
+                                        </button>
+
+                                    </div>
+                                </div>
+                                <div class="align-items-center">
+                                    <button type="button" class="btn btn-link" data-toggle="modal" data-target="#advSearchInfo">
+                                        <img class="img-responsive mr-1" style="width: 12px; height: 12px;" src="/gd/images/bootstrap-icons/info-icon.svg" alt="How to search info" />
+                                        <span style="font-size: 12px; ">How to search (Advanced search)</span>
+                                    </button>
+                                    <div class="modal fade" id="advSearchInfo" tabindex="-1" role="dialog" aria-labelledby="advSearchInfolLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" style="font-size:0.75rem;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="advSearchInfoLabel">How to search (Advanced search)</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="intro">
+                    Type in the keywords that you are interested in and choose the correct Search Method depending on what you are searching for (all of the words, any of the words, the exact phrase or boolean). You can also use Wildcard Characters and Search Operators. Choose keywords that are unique enough to identify the information you want. Searching for words that appear too commonly will likely return a greater number of irrelevant results.
+                </p>
+                <p>
+                    <span class="font-weight-bold">Please contact us at <a href="mailto:eLitigation@toppanecquaria.com"> eLitigation@toppanecquaria.com</a> if you have any feedback.</span>
+                </p>
+                <table class="table" aria-describedby="intro">
+                    <thead>
+                    <tr>
+                        <th scope="col">Search Operator</th>
+                        <th scope="col">Explanation</th>
+                        <th scope="col">Examples</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row">*</th>
+                            <td><strong>Multi-character wildcard operator</strong>, used to replace any number of characters in a word to search for variations of the word</td>
+                            <td>
+                                appli*<br /><br />
+                                def*n
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">?</th>
+                            <td><strong>Single character wildcard operator</strong>, used to replace a single character in a word to search for spelling variations</td>
+                            <td>
+                                defen?e<br /><br />
+                                organi?ation
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">"  "</th>
+                            <td>Performs an "exact phrase" search, i.e. retrieves documents containing the exact phrase within the quotation marks.</td>
+                            <td>"passing off"</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">AND </th>
+                            <td>Performs "all of the words" search, i.e. retrieves documents that contain all the entered keywords. </td>
+                            <td>
+                                negligence AND causation
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">OR</th>
+                            <td>Performs "any of the words" search, i.e. retrieves documents that contain any of the entered keywords. </td>
+                            <td>
+                                forfeiture OR eviction
+
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">NOT </th>
+                            <td>
+                                "<strong>NOT</strong>" operator, i.e. retrieves documents containing the keyword but excludes documents containing the keyword in a particular phrase/context.
+
+                            </td>
+                            <td>Minority NOT "minority shareholder"</td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">~#</th>
+                            <td><strong>Proximity operator</strong>, looks for terms that are within a specific distance from one another. Add the tilde character ~ and a numeric value to the end of a search phrase. i.e. retrieves documents that contain the entered keywords with # number of words between them. </td>
+                            <td>"breach contract"&nbsp;~10</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">(   )</th>
+                            <td>Grouping operator, used to group together search terms which should be executed together</td>
+                            <td>(doctor OR surgeon) AND negligence</td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+                
+                
+                
+                
+                
+
+                
+                
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+                                </div>
+                            </div>
+
+
+                            <div class="form-group col-xs-12 col-sm-12 col-lg-3 col-md-5">
+                                <!--Select Year input group-->
+                                <div class="input-group">
+                                    <select class="year-select custom-select gd-list-ctrl" id="ddlYears" name="YearOfDecision"><option value="">Search by Year</option>
+<option value="All">All</option>
+<option value="2026">2026</option>
+<option selected="selected" value="2025">2025</option>
+<option value="2024">2024</option>
+<option value="2023">2023</option>
+<option value="2022">2022</option>
+<option value="2021">2021</option>
+<option value="2020">2020</option>
+<option value="2019">2019</option>
+<option value="2018">2018</option>
+<option value="2017">2017</option>
+<option value="2016">2016</option>
+<option value="2015">2015</option>
+<option value="2014">2014</option>
+<option value="2013">2013</option>
+<option value="2012">2012</option>
+<option value="2011">2011</option>
+<option value="2010">2010</option>
+<option value="2009">2009</option>
+<option value="2008">2008</option>
+<option value="2007">2007</option>
+<option value="2006">2006</option>
+<option value="2005">2005</option>
+<option value="2004">2004</option>
+<option value="2003">2003</option>
+<option value="2002">2002</option>
+<option value="2001">2001</option>
+<option value="2000">2000</option>
+<option value="1999">1999</option>
+<option value="1998">1998</option>
+<option value="1997">1997</option>
+<option value="1996">1996</option>
+<option value="1995">1995</option>
+<option value="1994">1994</option>
+<option value="1993">1993</option>
+<option value="1992">1992</option>
+<option value="1991">1991</option>
+<option value="1990">1990</option>
+<option value="1989">1989</option>
+<option value="1988">1988</option>
+<option value="1987">1987</option>
+<option value="1986">1986</option>
+<option value="1985">1985</option>
+<option value="1984">1984</option>
+<option value="1983">1983</option>
+<option value="1982">1982</option>
+<option value="1981">1981</option>
+<option value="1980">1980</option>
+<option value="1979">1979</option>
+<option value="1978">1978</option>
+<option value="1977">1977</option>
+<option value="1976">1976</option>
+<option value="1975">1975</option>
+<option value="1974">1974</option>
+<option value="1973">1973</option>
+<option value="1972">1972</option>
+<option value="1971">1971</option>
+<option value="1970">1970</option>
+<option value="1969">1969</option>
+<option value="1968">1968</option>
+<option value="1967">1967</option>
+<option value="1966">1966</option>
+<option value="1965">1965</option>
+</select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group col-xs-12 col-sm-12 col-md-4 col-lg-3 col-xl-3">
+                        <!-- Sort import group-->
+                        <div class="input-group align-items-center" style="border: none;">
+                            <input data-val="true" data-val-required="The SortAscending field is required." id="hfIsAscending" name="SortAscending" type="hidden" value="False" />
+
+
+                            <button class="btn" id="btnSortResult" type="button">
+                                    <img class="img-responsive mr-1" style="width: 25px; height: 25px;" src="/gd/images/bootstrap-icons/sort-down-desc.svg" alt="Sort Descending" />
+
+
+                            </button>
+                            <select class="custom-select gd gd-list-ctrl" id="ddlSortBy" name="SortBy"><option value="Title">Title</option>
+<option value="DateOfDecision">Decision Date</option>
+</select>
+                        </div>
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+<div id="listview" class="container gd-container">
+
+
+
+
+    <div class="row justify-content-between align-items-center">
+        <div class="gd-csummary">
+            Total Judgment(s) Found : 573
+
+        </div>
+
+<div class="pagination-container"><ul class="pagination pagination-sm"><li class="page-item page-link PagedList-skipToFirst"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=1&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False">First</a></li><li class="page-item page-link PagedList-skipToPrevious"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=57&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False" rel="prev"><img src='/gd/images/gd-dashboard/Icon-paging-previous.svg' /></a></li><li class="page-item page-link disabled PagedList-ellipses"><a>&#8230;</a></li><li class="page-item page-link"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=54&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False">54</a></li><li class="page-item page-link"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=55&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False">55</a></li><li class="page-item page-link"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=56&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False">56</a></li><li class="page-item page-link"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=57&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False">57</a></li><li class="page-item page-link active"><a>58</a></li></ul></div>    </div>
+    <div class="col-12 between-cards">&nbsp;</div>
+
+    <div class="row">
+<style>
+
+    .gd-heardertext {
+        color: #751c24;
+        text-decoration: none;
+        border-bottom: 1px solid #ebd3d7;
+    }
+
+    .tooltip-inner {
+        max-width: 350px;
+    }
+</style>
+<div class="card col-12">
+
+    <div class="card-body gd p-2 ">
+
+
+        <div class="row align-items-center justify-content-between">
+            <div class=" col-xs-12 col-sm-12 col-md-12 col-lg-8 col-xl-8 ">
+                <div class="align-items-center">
+
+                                            <div class="gd-catchword-container">
+                                    <a class="gd-cw" data-searchterm="CatchWords:&#34;Criminal Procedure and Sentencing — Sentencing — Appeals 
+&#34;"
+                                       href="#">
+                                        [Criminal Procedure and Sentencing — Sentencing — Appeals 
+]
+                                    </a>
+                                    <a class="gd-cw" data-searchterm="CatchWords:&#34;Criminal Law — Statutory offences — Residential Property Act (Cap 274, 1985 Rev Ed)&#34;"
+                                       href="#">
+                                        [Criminal Law — Statutory offences — Residential Property Act (Cap 274, 1985 Rev Ed)]
+                                    </a>
+                                    <a class="gd-cw" data-searchterm="CatchWords:&#34;Criminal Law — Statutory offences — Penal Code (Cap 224, 2008 Rev Ed) — Provision of false evidence in judicial proceedings&#34;"
+                                       href="#">
+                                        [Criminal Law — Statutory offences — Penal Code (Cap 224, 2008 Rev Ed) — Provision of false evidence in judicial proceedings]
+                                    </a>
+                        </div>
+                    <div class="gd-card-body">
+                            <a target="_blank" data-toggle="tooltip" data-placement="bottom" title="Click here to read Judgment"
+                               href='/gd/s/2025_SGHC_2'
+                               class="h5 gd-heardertext">
+                                TAN HUI MENG v PUBLIC PROSECUTOR
+                            </a>
+
+                        <br />
+
+                        <a href="#" class="citation-num-link" data-searchparam="&#34;[2025] SGHC 2&#34;">
+                            <span class="gd-addinfo-text">[2025] SGHC 2 |</span>
+                        </a>
+
+                            <a class="decision-date-link" data-searchparam="DecisionDate:&#34;2025-01-08&#34;" href="#">
+
+                                <span class="gd-addinfo-text"> Decision Date: 8 Jan 2025 | </span>
+                            </a>
+                        <a class="case-num-link" data-searchparam="&#34;HC/MA 9038/2024/01|HC/MA 9038/2024/02&#34;" href="#">
+                            <span class="gd-addinfo-text"> HC/MA 9038/2024/01|HC/MA 9038/2024/02 </span>
+                        </a>
+                        
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+            <div class="col-12 between-cards">&nbsp;</div>
+<style>
+
+    .gd-heardertext {
+        color: #751c24;
+        text-decoration: none;
+        border-bottom: 1px solid #ebd3d7;
+    }
+
+    .tooltip-inner {
+        max-width: 350px;
+    }
+</style>
+<div class="card col-12">
+
+    <div class="card-body gd p-2 ">
+
+
+        <div class="row align-items-center justify-content-between">
+            <div class=" col-xs-12 col-sm-12 col-md-12 col-lg-8 col-xl-8 ">
+                <div class="align-items-center">
+
+                                            <div class="gd-catchword-container">
+                                    <a class="gd-cw" data-searchterm="CatchWords:&#34;Civil Procedure — Appeals — Adducing fresh evidence on appeal&#34;"
+                                       href="#">
+                                        [Civil Procedure — Appeals — Adducing fresh evidence on appeal]
+                                    </a>
+                                    <a class="gd-cw" data-searchterm="CatchWords:&#34;Civil Procedure — Extension of time — Extension of time to file an appeal under O 20 r 3 of the Rules of Court 2021&#34;"
+                                       href="#">
+                                        [Civil Procedure — Extension of time — Extension of time to file an appeal under O 20 r 3 of the Rules of Court 2021]
+                                    </a>
+                                    <a class="gd-cw" data-searchterm="CatchWords:&#34;Land — Strata Titles — Strata Titles Board — Whether grounds of appeal against order made by Strata Titles Board raised points of law
+&#34;"
+                                       href="#">
+                                        [Land — Strata Titles — Strata Titles Board — Whether grounds of appeal against order made by Strata Titles Board raised points of law
+]
+                                    </a>
+                        </div>
+                    <div class="gd-card-body">
+                            <a target="_blank" data-toggle="tooltip" data-placement="bottom" title="Click here to read Judgment"
+                               href='/gd/s/2025_SGHC_1'
+                               class="h5 gd-heardertext">
+                                ISABELLE LEW HUEY JIUN &amp; Anor  v MICHAEL LEE YU RU &amp; Anor 
+                            </a>
+
+                        <br />
+
+                        <a href="#" class="citation-num-link" data-searchparam="&#34;[2025] SGHC 1&#34;">
+                            <span class="gd-addinfo-text">[2025] SGHC 1 |</span>
+                        </a>
+
+                            <a class="decision-date-link" data-searchparam="DecisionDate:&#34;2025-01-08&#34;" href="#">
+
+                                <span class="gd-addinfo-text"> Decision Date: 8 Jan 2025 | </span>
+                            </a>
+                        <a class="case-num-link" data-searchparam="&#34;HC/OA 780/2024 ( HC/SUM 2752/2024 ) &#34;" href="#">
+                            <span class="gd-addinfo-text"> HC/OA 780/2024 ( HC/SUM 2752/2024 )  </span>
+                        </a>
+                        
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+            <div class="col-12 between-cards">&nbsp;</div>
+<style>
+
+    .gd-heardertext {
+        color: #751c24;
+        text-decoration: none;
+        border-bottom: 1px solid #ebd3d7;
+    }
+
+    .tooltip-inner {
+        max-width: 350px;
+    }
+</style>
+<div class="card col-12">
+
+    <div class="card-body gd p-2 ">
+
+
+        <div class="row align-items-center justify-content-between">
+            <div class=" col-xs-12 col-sm-12 col-md-12 col-lg-8 col-xl-8 ">
+                <div class="align-items-center">
+
+                                            <div class="gd-catchword-container">
+                                    <a class="gd-cw" data-searchterm="CatchWords:&#34;Arbitration — Recourse against award — Breach of natural justice  
+&#34;"
+                                       href="#">
+                                        [Arbitration — Recourse against award — Breach of natural justice  
+]
+                                    </a>
+                                    <a class="gd-cw" data-searchterm="CatchWords:&#34;Arbitration — Recourse against award — Lack of proper notice — Whether actual or deemed notice of the arbitration was provided&#34;"
+                                       href="#">
+                                        [Arbitration — Recourse against award — Lack of proper notice — Whether actual or deemed notice of the arbitration was provided]
+                                    </a>
+                                    <a class="gd-cw" data-searchterm="CatchWords:&#34;Arbitration — Recourse against award — Infra petita — Whether infra petita challenges should be rationalised as natural justice challenges — Whether a non-participating party can bring an infra petita challenge&#34;"
+                                       href="#">
+                                        [Arbitration — Recourse against award — Infra petita — Whether infra petita challenges should be rationalised as natural justice challenges — Whether a non-participating party can bring an infra petita challenge]
+                                    </a>
+                        </div>
+                    <div class="gd-card-body">
+                            <a target="_blank" data-toggle="tooltip" data-placement="bottom" title="Click here to read Judgment"
+                               href='/gd/s/2025_SGCA_1'
+                               class="h5 gd-heardertext">
+                                DEM v DEL
+                            </a>
+
+                        <br />
+
+                        <a href="#" class="citation-num-link" data-searchparam="&#34;[2025] SGCA 1&#34;">
+                            <span class="gd-addinfo-text">[2025] SGCA 1 |</span>
+                        </a>
+
+                            <a class="decision-date-link" data-searchparam="DecisionDate:&#34;2025-01-03&#34;" href="#">
+
+                                <span class="gd-addinfo-text"> Decision Date: 3 Jan 2025 | </span>
+                            </a>
+                        <a class="case-num-link" data-searchparam="&#34;CA/CA 24/2024&#34;" href="#">
+                            <span class="gd-addinfo-text"> CA/CA 24/2024 </span>
+                        </a>
+                        
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+            <div class="col-12 between-cards">&nbsp;</div>
+    </div>
+
+        <div class="row justify-content-end">
+
+            <div class="pagination-container"><ul class="pagination pagination-sm"><li class="page-item page-link PagedList-skipToFirst"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=1&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False">First</a></li><li class="page-item page-link PagedList-skipToPrevious"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=57&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False" rel="prev"><img src='/gd/images/gd-dashboard/Icon-paging-previous.svg' /></a></li><li class="page-item page-link disabled PagedList-ellipses"><a>&#8230;</a></li><li class="page-item page-link"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=54&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False">54</a></li><li class="page-item page-link"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=55&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False">55</a></li><li class="page-item page-link"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=56&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False">56</a></li><li class="page-item page-link"><a href="/gd/Home/Index?Filter=SUPCT&amp;YearOfDecision=2025&amp;SortBy=Score&amp;CurrentPage=57&amp;SortAscending=False&amp;PageSize=0&amp;Verbose=False&amp;SearchQueryTime=0&amp;SearchTotalHits=0&amp;SearchMode=True&amp;SpanMultiplePages=False">57</a></li><li class="page-item page-link active"><a>58</a></li></ul></div>
+
+        </div>
+</div>
+
+
+
+
+            </div>
+
+        </div>
+        
+<link href="/gd/Content/themes/supct/main-trimmed.css" rel="stylesheet" type="text/css"/>
+
+
+<script src="/gd/Scripts/gdviewer/footer.js"></script>
+<footer style="background-color: white">
+
+    <div class="copyright pt-3 pb-3">
+        <div class="container ">
+            <div class="copy-bg">
+                <p class="pull-left">
+                    ©
+                    <span id="copyrightYear"></span>Government of Singapore<br/>
+                </p>
+
+            </div>
+
+            <div class="row  justify-content-end">
+                <p>
+                    <span>
+                        Last updated: 19 Oct 2026
+                    </span>
+                </p>
+                
+            </div>
+
+        </div>
+
+    </div>
+</footer>
+
+    </div>
+<script src="/gd/bundles/jquery?v=oOzaTKJsC5Ym48lD05_6hOV8A5B2Hc8xC-_lTD7d3fY1"></script>
+
+<script src="/gd/bundles/popper?v=zOINMxjnatGLZS6bBVNe1bY40sHnrpfVyxmISr5IxGM1"></script>
+
+<script src="/gd/bundles/bootstrap?v=cACW5_waT3azse3UwFvBKotUB559JI9U2ADvNi93fjw1"></script>
+
+<script src="/gd/bundles/gdViewer?v=IEFESvCLvvTOjRUmQv6_Q_QGTtHO5yKh5hnQrPufJZA1"></script>
+
+
+
+
+
+
+    <style>
+
+        .gd-addinfo-text.snippet em {
+            font-weight: bold;
+        }
+
+        .search-highlight em {
+            font-weight: bold;
+        }
+
+        .tooltip-inner {
+            max-width: 350px;
+        }
+    </style>
+    
+    <script src="/gd/Scripts/gdviewer/views/home/partials/GdCard.js"></script>
+    
+
+
+</body>
+</html>

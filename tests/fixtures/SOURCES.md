@@ -26,3 +26,14 @@ Every fixture is a real body that a source sent, trimmed by removing whole rows 
 | `pdf/LEOMA2024-p26-30.pdf` | `archive-harvest/LEOMA2024.pdf` | Not recorded: a PDF the Internet Archive stored | Physical pages 26 to 30 of 30, joined with `pdfseparate` and `pdfunite` (sections 13 to 15; section 13 on page 26 closes the quote that opens `“any person believed to be` with two U+2019 `’’`, printed `take P’’; and`). Pages 1 to 25 were removed whole. |
 
 `tests/test_archive_capture.py` also builds a few `CdxCapture` values in code. Their original URLs and timestamps are copied from rows of `cdx-2025-2026/cdx.json` (AA1906, AA2001 and AA2004). That file has no digest column, so those values carry an empty digest.
+
+## eLitigation
+
+Every file below is the whole body the eLitigation service sent, unchanged, fetched on 7 November 2026 with status 200 and content type `text/html; charset=utf-8`. No maintenance page was captured: the service gives none on demand, so no fixture holds one.
+
+| Fixture | URL | Fetched | Status | Kept |
+|---|---|---|---|---|
+| `elitigation/supct-2025-page-1.html` | `https://www.elitigation.sg/gd/Home/Index?Filter=SUPCT&YearOfDecision=2025&SortBy=Score&CurrentPage=1` | 2026-11-07 | 200 | The whole page: 573 judgments found, 10 rows, a "Last" link to page 58. |
+| `elitigation/supct-2025-page-58.html` | `https://www.elitigation.sg/gd/Home/Index?Filter=SUPCT&YearOfDecision=2025&SortBy=Score&CurrentPage=58` | 2026-11-07 | 200 | The whole page: the last page of 2025, 3 rows, no "Last" link. |
+| `elitigation/statect-2025-system-error.html` | `https://www.elitigation.sg/gd/Home/Index?Filter=STATECT&YearOfDecision=2025&SortBy=Score&CurrentPage=1` | 2026-11-07 | 200 | The whole 4,226-byte page reading "A system error has occurred and the requested operation could not be completed." |
+| `elitigation/judgment-2025-sghc-267.html` | `https://www.elitigation.sg/gd/s/2025_SGHC_267` | 2026-11-07 | 200 | The whole judgment page, 15,153 bytes, with `[2025] SGHC 267` in `.HN-NeutralCit`. |
