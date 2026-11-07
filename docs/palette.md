@@ -31,7 +31,7 @@ Patina's chroma is raised because at the sample's own 0.04 the colour is a dull 
 
 ## Banner
 
-Royce picked this draft from five on 7 November 2026, over a recommended ruled block of Acts by decade.
+Royce picked this draft from five on 7 November 2026, over a recommended ruled block of Acts by decade. [ADR 0006](adr/0006-identity-from-the-former-supreme-court-facade.md) says why the facade.
 
 - It shares openhansard's banner in these ways: a 1280 by 320 canvas, no background, the mark's square, capitals as tall as the mark, and the name's colours. It runs from x 64 to x 1209, and its capitals are 106 px tall.
 - The name is Barlow Condensed Light and Bold, outlined to paths, because openhansard's banner uses it. OPEN LAW was ruled out because OpenLaw is a separate source.
