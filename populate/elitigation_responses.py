@@ -40,7 +40,7 @@ from utils.elitigation_judgment import get_elitigation_neutral_citation
 _COURT_FILTER = "SUPCT"
 _FIRST_YEAR = 1965
 _FIRST_PAGE_NUMBER = 1
-_NEUTRAL_CITATION_MARKER = 'class="HN-NeutralCit'
+_NEUTRAL_CITATION_MARKER = "<title>["
 _BODIES_PER_COMMIT = 100
 _HTTP_OK = 200
 

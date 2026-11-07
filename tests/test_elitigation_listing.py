@@ -16,6 +16,9 @@ _SYSTEM_ERROR_HTML = (
     _FIXTURES_DIRECTORY / "statect-2025-system-error.html"
 ).read_text()
 _JUDGMENT_HTML = (_FIXTURES_DIRECTORY / "judgment-2025-sghc-267.html").read_text()
+_DISTRICT_COURT_JUDGMENT_HTML = (
+    _FIXTURES_DIRECTORY / "judgment-2026-sgdc-361.html"
+).read_text()
 _YEAR_TOTAL = 573
 _YEAR_PAGE_COUNT = 58
 _FULL_PAGE_ROW_COUNT = 10
@@ -61,6 +64,17 @@ def test_the_system_error_page_raises() -> None:
 
 def test_a_judgment_page_gives_its_neutral_citation() -> None:
     assert get_elitigation_neutral_citation(_JUDGMENT_HTML) == "[2025] SGHC 267"
+
+
+def test_a_district_court_page_gives_the_citation_in_its_title() -> None:
+    assert (
+        get_elitigation_neutral_citation(_DISTRICT_COURT_JUDGMENT_HTML)
+        == "[2026] SGDC 361"
+    )
+
+
+def test_a_listing_page_gives_no_neutral_citation() -> None:
+    assert get_elitigation_neutral_citation(_FIRST_PAGE_HTML) is None
 
 
 def test_a_page_without_a_neutral_citation_gives_none() -> None:

@@ -8,7 +8,7 @@ The Supreme Court's eLitigation service publishes the written judgments of the S
 - Total: the listing page prints the year's count as "Total Judgment(s) Found : 573" (2025).
 - Page count: the page does not state it. Page 1 links to the last page with a "Last" link (`CurrentPage=58` for 2025), and the last page links to no later page and marks its own number as the active one. `utils/elitigation_listing.py` takes the highest page number any pagination link or active marker shows.
 - Judgment link: each listing row links to its judgment with `a.gd-heardertext`, to a path like `/gd/s/2025_SGHC_267`. The row prints its neutral citation in `a.citation-num-link`, as the court spells it (`[2025] SGHC(A) 26` for the path `2025_SGHCA_26`).
-- Judgment page: `get_elitigation_judgment_response` fetches the URL that path gives. The page holds the full text and prints its neutral citation in `.HN-NeutralCit`, such as `[2025] SGHC 267`.
+- Judgment page: `get_elitigation_judgment_response` fetches the URL that path gives. The page holds the full text, and its title is its neutral citation as the court prints it, such as `[2025] SGHC 267` or `[2026] SGHC(A) 26`. Supreme Court pages also print it in `.HN-NeutralCit`, but State Courts and Family Justice Courts pages do not (run 3, 7 November 2026), so the stage reads the title. A listing or error page is titled `SG Courts Judgments`.
 - Years: the year dropdown `#ddlYears` lists 2026 down to 1965. The stage walks the current year down to 1965.
 
 ## The SUPCT filter
@@ -19,7 +19,7 @@ Fetched on 7 November 2026: `Filter=SUPCT` lists the judgments of all three cour
 
 `Filter=STATECT`, `Filter=FAMCT` and `Filter=ALL` each answer status 200 with a 4,226-byte page reading "A system error has occurred and the requested operation could not be completed." (fixture `tests/fixtures/elitigation/statect-2025-system-error.html`). The sg-legal-corpus project also saw a maintenance notice come back with status 200. No maintenance page could be captured on demand, so no fixture holds one.
 
-A status of 200 does not show that a page holds judgments. A listing page with no total, and a judgment page with no `.HN-NeutralCit`, are failures: the stage stores the body raw like any other, counts a failure, and leaves the URL for the next run. A judgment counts as stored only while a 200 body holding `class="HN-NeutralCit` is stored for its URL.
+A status of 200 does not show that a page holds judgments. A listing page with no total, and a judgment page whose title is not a neutral citation, are failures: the stage stores the body raw like any other, counts a failure, and leaves the URL for the next run. A judgment counts as stored only while a 200 body holding `<title>[` is stored for its URL.
 
 ## Pacing
 
