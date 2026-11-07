@@ -89,7 +89,9 @@ Each stage is a script that runs one populate module, and each stage reads only 
 
 9. **Report coverage** (`scripts/coverage_figures.py` + `populate/coverage_figures.py`): read only. Counts versions by source and year, sections by kind, the lowest text share and the Hansard links.
 
-Not built: the eLitigation listing and judgment parsers and their stage (only `gateway/elitigation.py` exists, tested against fakes), the eGazette and data.gov.sg stages, and subsidiary legislation. Each waits on real pages to test against or on requests that may not go out yet, as the run's parked list, kept outside git, records.
+10. **Harvest eLitigation** (`scripts/harvest_elitigation.py` + `populate/elitigation_responses.py` + `gateway/elitigation.py`): for each year from the current year down to 1965 it fetches every listing page with the `SUPCT` filter (which lists all three courts, see `docs/sources/elitigation.md`), then each listed judgment page that has no stored 200 body holding a neutral citation. `utils/elitigation_listing.py` reads the total, the page count and each row's judgment path and printed citation, and `utils/elitigation_judgment.py` reads a judgment page's citation. A 200 body with no total or no citation is stored raw and counts as a failure. Guards and storage are stage 1's, with no time window. Ends with one log line per year. Writes `source_response` and `harvest_run`. The source stays UNPUBLISHED.
+
+Not built: the eGazette and data.gov.sg stages, and subsidiary legislation. Each waits on real pages to test against or on requests that may not go out yet, as the run's parked list, kept outside git, records.
 
 ### Database models
 
@@ -117,6 +119,7 @@ Every script runs as `python -m scripts.<name>`. A write script is a dry run unl
 - `clear_sso_challenge.py`: sets a CHALLENGED SSO source back to UNTESTED, with `--reason`. Writes `source`. A dry run unless `--commit`.
 - `publish_source.py`: sets a source PUBLISHED, or UNPUBLISHED with `--withdraw`, with `--reason`, and in the same transaction grants and revokes the site role's `SELECT` to match. Writes `source` and the grants. A dry run unless `--commit`; the dry run logs the grants and revokes it would make.
 - `harvest_sso.py`: sends one night's SSO requests, inside 03:00 to 06:55 SGT, and stores each body. Writes `source_response`, `harvest_run` and the SSO access state on `source`. A dry run unless `--commit`; the dry run logs the SSO state and the stored counts and sends nothing.
+- `harvest_elitigation.py`: sends the eLitigation requests of every year and stores each body. Writes `source_response` and `harvest_run`. A dry run unless `--commit`; the dry run logs the stored counts and sends nothing.
 - `harvest_archive.py`: fetches the Internet Archive's CDX answer, the latest plain capture of each Act PDF and the listing captures, and stores each body. Writes `source_response` and `harvest_run`. A dry run unless `--commit`; the dry run logs the stored counts and sends nothing.
 - `apply_legislation.py`: reads the stored listing pages and stores the Acts they show. Writes `legislation`. A dry run unless `--commit`.
 - `apply_hansard_links.py`: reads the act-links plan (`--plan-file`) and the Hansard report export (`--report-export-file`), both kept outside git, and the stored `legislation` rows. The dry run writes the plan to `--plan-output` for review. The commit builds the plan again, refuses unless it equals the reviewed file, and writes `bill`, `bill_report` and `act_history_entry` in one transaction.
@@ -191,6 +194,7 @@ open-sg-law/
 ├── populate/                        # Pipeline stages: gateway + services + crud
 │   ├── sso_responses.py             # The SSO harvest stage, with its window and challenge guards
 │   ├── archive_responses.py         # The Internet Archive harvest stage
+│   ├── elitigation_responses.py     # The eLitigation harvest stage
 │   ├── legislation.py               # Plans and writes legislation rows from stored listings
 │   ├── hansard_links.py             # Plans and writes the Hansard link tables in one transaction
 │   ├── legislation_versions.py      # Plans and writes versions from stored PDFs
@@ -204,6 +208,8 @@ open-sg-law/
 │   ├── sso_act_url.py               # Reads an SSO Act PDF URL: its code and version stamp, or None for a dated copy
 │   ├── sso_listing.py               # Builds an SSO listing page URL, and parses a listing page into rows and its page index
 │   ├── archive_capture_url.py       # Builds the Internet Archive URL of a capture
+│   ├── elitigation_listing.py       # Parses an eLitigation listing page into its total, page count and rows
+│   ├── elitigation_judgment.py      # Reads the neutral citation of an eLitigation judgment page
 │   ├── openhansard_url.py           # Builds an openhansard.sg report URL as the site does
 │   ├── pdf_text.py                  # PDF → lines with bold and margin marks, and images per page
 │   ├── legislation_update.py        # LegislationUpdate: one legislation row's change, for a bulk update
@@ -214,6 +220,7 @@ open-sg-law/
 │   ├── publish_source.py
 │   ├── harvest_sso.py
 │   ├── harvest_archive.py
+│   ├── harvest_elitigation.py
 │   ├── apply_legislation.py
 │   ├── apply_hansard_links.py
 │   ├── apply_legislation_versions.py
