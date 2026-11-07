@@ -69,6 +69,18 @@ class CRUDSourceResponse:
         )
         return list(self.session.exec(statement).all())
 
+    def get_requested_urls_by_source_and_kind_and_status_code_and_body_text_contains(
+        self, source: SourceName, kind: ResponseKind, status_code: int, text: str
+    ) -> list[str]:
+        statement = (
+            select(SourceResponse.requested_url)
+            .where(SourceResponse.source == source)
+            .where(SourceResponse.kind == kind)
+            .where(SourceResponse.status_code == status_code)
+            .where(col(SourceResponse.body_text).contains(text))
+        )
+        return list(self.session.exec(statement).all())
+
     def get_count_by_source_and_kind_and_status_code(
         self, source: SourceName, kind: ResponseKind, status_code: int
     ) -> int:
