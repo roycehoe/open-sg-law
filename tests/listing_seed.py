@@ -24,6 +24,9 @@ FIRST_PAGE_BODY = (
 SECOND_PAGE_BODY = (
     _FIXTURES_DIRECTORY / "browse-all-p2-20240719-trimmed.html"
 ).read_bytes()
+NO_PDF_LINK_PAGE_BODY = (
+    _FIXTURES_DIRECTORY / "browse-all-p1-20240716-no-pdf-link-trimmed.html"
+).read_bytes()
 OFFLINE_PAGE_BODY = (
     Path(__file__).parent / "fixtures" / "archive" / "temporarily-offline-20261104.html"
 ).read_bytes()

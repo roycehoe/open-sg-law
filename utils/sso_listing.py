@@ -28,7 +28,7 @@ def build_sso_listing_url(page_index: int) -> str:
 class SsoListingRow:
     sso_code: str
     title: str
-    pdf_path: str
+    pdf_path: Optional[str]
     version_stamp: Optional[str]
 
 
@@ -61,10 +61,11 @@ def _get_listing_row(table_row: Tag) -> Optional[SsoListingRow]:
     if _ACT_TITLE_PATH_PATTERN.match(title_path) is None:
         return None
     _act_path, _slash, sso_code = title_path.rpartition("/")
+    title = title_link.get_text(strip=True)
     pdf_link = table_row.select_one("td.hidden-xs a.file-download")
     if pdf_link is None:
-        raise OpenSgLawListingParseError(
-            f"The listing row for {sso_code} holds no PDF link"
+        return SsoListingRow(
+            sso_code=sso_code, title=title, pdf_path=None, version_stamp=None
         )
     pdf_path = pdf_link.get("href")
     if not isinstance(pdf_path, str):
@@ -78,7 +79,7 @@ def _get_listing_row(table_row: Tag) -> Optional[SsoListingRow]:
         )
     return SsoListingRow(
         sso_code=sso_code,
-        title=title_link.get_text(strip=True),
+        title=title,
         pdf_path=pdf_path,
         version_stamp=sso_act_pdf.version_stamp,
     )

@@ -73,4 +73,5 @@ def get_act_pdf_paths_to_fetch(
                 listing_row.sso_code,
             ),
         )
+        if listing_row.pdf_path is not None
     ]

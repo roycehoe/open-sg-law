@@ -1,7 +1,12 @@
 import pytest
 
 from exceptions import OpenSgLawListingParseError
-from tests.listing_seed import FIRST_PAGE_BODY, OFFLINE_PAGE_BODY, SECOND_PAGE_BODY
+from tests.listing_seed import (
+    FIRST_PAGE_BODY,
+    NO_PDF_LINK_PAGE_BODY,
+    OFFLINE_PAGE_BODY,
+    SECOND_PAGE_BODY,
+)
 from utils.sso_listing import (
     SsoListingRow,
     build_sso_listing_url,
@@ -54,6 +59,31 @@ def test_the_second_listing_page_holds_the_trust_companies_act() -> None:
         )
         in sso_listing_page.rows
     )
+
+
+def test_a_listed_act_with_no_pdf_link_is_kept_with_no_pdf_path() -> None:
+    sso_listing_page = get_sso_listing_page(NO_PDF_LINK_PAGE_BODY.decode("utf-8"))
+
+    assert sso_listing_page.rows == [
+        SsoListingRow(
+            sso_code="AA2004",
+            title="Accountants Act 2004",
+            pdf_path="/Act/AA2004?ViewType=Pdf&_=20240702194429",
+            version_stamp="20240702194429",
+        ),
+        SsoListingRow(
+            sso_code="GSTVFA2012",
+            title="Goods and Services Tax Voucher Fund Act 2012",
+            pdf_path=None,
+            version_stamp=None,
+        ),
+        SsoListingRow(
+            sso_code="GCA1966",
+            title="Government Contracts Act 1966",
+            pdf_path=None,
+            version_stamp=None,
+        ),
+    ]
 
 
 def test_the_archive_offline_page_is_not_a_listing() -> None:

@@ -16,6 +16,7 @@ The Attorney-General's Chambers publishes the current consolidated text of every
 - Listing, first page: `https://sso.agc.gov.sg/Browse/Act/Current/All?PageSize=500`
 - Listing, later pages: `https://sso.agc.gov.sg/Browse/Act/Current/All/<n>?PageSize=500&SortBy=Title&SortOrder=ASC`, where `<n>` is the zero-based page index, so the second page is `1`. The first page has no index segment. In July 2024 the listing held 523 Acts in 2 pages.
 - Act PDF: the path the listing row links to, such as `/Act/AA2004?ViewType=Pdf&_=20240702194429`. The `_=` value is SSO's version stamp, `YYYYMMDDhhmmss`.
+- A listed Act may have no PDF link. The listing of 16 July 2024 shows two, GSTVFA2012 and GCA1966. Such a row is kept with no PDF path and no version stamp, so the Act still gets a `legislation` row, and the SSO stage requests no PDF for it.
 
 The search pages are never requested.
 

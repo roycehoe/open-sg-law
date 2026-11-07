@@ -36,6 +36,7 @@ def test_get_act_pdf_paths_to_fetch_orders_and_skips() -> None:
             "AA2004", "Accountants Act 2004", _AA2004_PDF_PATH, "20240702194429"
         ),
         SsoListingRow("ZZ1999", "Unstamped Act 1999", "/Act/ZZ1999?ViewType=Pdf", None),
+        SsoListingRow("YY2012", "Unlinked Act 2012", None, None),
         SsoListingRow(
             "BB2001",
             "Older Act 2001",
