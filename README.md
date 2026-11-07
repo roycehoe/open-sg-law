@@ -1,4 +1,7 @@
-# open-sg-law
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/banner-dark.svg">
+  <img alt="Open SG Law" src="docs/images/banner-light.svg">
+</picture>
 
 A free, non-commercial, open-source platform that puts Singapore legislation and court judgments in one place, in plain language a non-lawyer can use, with lawyers as the main audience. It holds Acts and subsidiary legislation and judgments from eLitigation. Each Act links to the Hansard debates on its bills through [openhansard.sg](https://openhansard.sg).
 
@@ -115,6 +118,7 @@ python -m alembic upgrade head
 - [Data-loss register](docs/data-loss-register.md): every step that drops or changes source text.
 - [Backlog](docs/backlog.md): the sources left out of version 1.
 - [Decision records](docs/adr/): why the project works the way it does.
+- [Palette](docs/palette.md): the banner's colours and the photos they come from.
 - [STYLE.md](STYLE.md): the coding rules every change follows.
 
 ## Data source and terms
@@ -139,4 +143,4 @@ Open an issue before you open a pull request. [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-The code is under the [MIT license](LICENSE). The license does not cover the legislation and judgments the pipeline fetches, which belong to their owners.
+The code is under the [MIT license](LICENSE). The license does not cover the legislation and judgments the pipeline fetches, which belong to their owners. The photos in [docs/palette/sources](docs/palette/sources/SOURCES.md) keep the licences listed there.
