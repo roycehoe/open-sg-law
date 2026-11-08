@@ -25,7 +25,7 @@ The database is not published. Each source has its own terms, and a table is ope
 
 | Source | Fetched | Published |
 |---|---|---|
-| SSO | Yes, 03:00 to 07:00 SGT, at one request a minute | Yes, under clause 13 |
+| SSO | Yes, 03:00 to 07:00 SGT, one request every 6 seconds | Yes, under clause 13 |
 | eGazette | Yes | Yes, under clause 11 |
 | data.gov.sg eGazette indexes | Yes | Yes, under the Open Data Licence |
 | Internet Archive copies of SSO | Yes, about 10 a minute | Probably, under clause 13 |
@@ -131,7 +131,7 @@ eGazette's terms of use, clause 11, give permission "to reproduce any e-Gazettes
 
 The Judiciary's terms of use, section 6, bar reproducing its content "for any commercial purposes whatsoever" without written permission. This project is non-commercial and stays so ([ADR 0002](docs/adr/0002-non-commercial-for-good.md)). No judgment is published until the Supreme Court says yes in writing.
 
-Requests to SSO run only inside its window, at the rates the letters promise, with a user agent that names this project and its issues page. Nothing here works around a firewall or uses a headless browser.
+Requests to SSO run only inside its window, 6 seconds apart as its `robots.txt` asks, with a user agent that names this project and its issues page. A challenged request waits and is sent again on a fixed backoff under the same user agent, and a night ends when three URLs in a row stay challenged. Nothing here disguises its requests or uses a headless browser.
 
 ## Credit
 

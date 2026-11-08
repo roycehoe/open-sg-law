@@ -27,6 +27,7 @@ from exceptions import (
     OpenSgLawSsoChallengeError,
     OpenSgLawSsoWindowError,
 )
+from gateway.http import SSO_PACER
 from gateway.sso import (
     get_sso_document_response,
     get_sso_listing_response,
@@ -51,6 +52,8 @@ from services.sso_answer import (
     is_sso_robots_file,
 )
 from services.sso_request import (
+    SSO_CHALLENGE_BACKOFF_SECONDS,
+    SSO_MAX_CONSECUTIVE_CHALLENGED_PATHS,
     get_act_pdf_paths_to_fetch,
     validate_can_send_sso_request,
 )
@@ -63,6 +66,7 @@ _FIRST_EXPECTED_ANSWER_REASON = "First expected answer"
 @dataclass
 class _NightProgress:
     consecutive_failure_count: int = 0
+    consecutive_challenged_path_count: int = 0
 
 
 def _finish_harvest_run(
@@ -152,7 +156,7 @@ def _mark_source_serving(
     session.commit()
 
 
-def _send_sso_request(
+def _send_sso_request_once(
     session: Session,
     harvest_run: HarvestRun,
     harvest_run_id: int,
@@ -179,6 +183,38 @@ def _send_sso_request(
     _mark_source_serving(session, source, clock)
     _validate_can_store_more(session)
     return source_http_response
+
+
+def _send_sso_request(
+    session: Session,
+    harvest_run: HarvestRun,
+    harvest_run_id: int,
+    source: Source,
+    night_progress: _NightProgress,
+    send_request: Callable[[], SourceHttpResponse],
+    kind: ResponseKind,
+    is_expected_body: Callable[[SourceHttpResponse], bool],
+    clock: Callable[[], datetime],
+) -> Optional[SourceHttpResponse]:
+    send_request_once = partial(
+        _send_sso_request_once,
+        session,
+        harvest_run,
+        harvest_run_id,
+        source,
+        night_progress,
+        send_request,
+        kind,
+        is_expected_body,
+        clock,
+    )
+    for backoff_seconds in SSO_CHALLENGE_BACKOFF_SECONDS:
+        try:
+            return send_request_once()
+        except OpenSgLawSsoChallengeError as error:
+            logger.warning(f"SSO challenge, next try in {backoff_seconds} s: {error}")
+            SSO_PACER.sleep(backoff_seconds)
+    return send_request_once()
 
 
 def _fetch_listing_rows(
@@ -227,6 +263,46 @@ def _fetch_listing_rows(
     return listing_rows
 
 
+def _fetch_pdf_paths(
+    session: Session,
+    harvest_run: HarvestRun,
+    harvest_run_id: int,
+    source: Source,
+    night_progress: _NightProgress,
+    validate_can_send: Callable[[], None],
+    clock: Callable[[], datetime],
+    pdf_paths: list[str],
+) -> list[str]:
+    challenged_pdf_paths: list[str] = []
+    for pdf_path in pdf_paths:
+        try:
+            _send_sso_request(
+                session,
+                harvest_run,
+                harvest_run_id,
+                source,
+                night_progress,
+                partial(get_sso_document_response, pdf_path, validate_can_send),
+                ResponseKind.DOCUMENT,
+                is_sso_pdf,
+                clock,
+            )
+        except OpenSgLawSsoChallengeError:
+            night_progress.consecutive_challenged_path_count += 1
+            if (
+                night_progress.consecutive_challenged_path_count
+                >= SSO_MAX_CONSECUTIVE_CHALLENGED_PATHS
+            ):
+                raise
+            logger.warning(
+                f"SSO challenged {pdf_path} through every backoff; retrying it later"
+            )
+            challenged_pdf_paths.append(pdf_path)
+            continue
+        night_progress.consecutive_challenged_path_count = 0
+    return challenged_pdf_paths
+
+
 def _fetch_documents(
     session: Session,
     harvest_run: HarvestRun,
@@ -249,17 +325,17 @@ def _fetch_documents(
             SourceName.INTERNET_ARCHIVE, ResponseKind.DOCUMENT, _HTTP_OK
         ),
     ]
-    for pdf_path in get_act_pdf_paths_to_fetch(listing_rows, stored_document_urls):
-        _send_sso_request(
+    pdf_paths_to_fetch = get_act_pdf_paths_to_fetch(listing_rows, stored_document_urls)
+    while pdf_paths_to_fetch:
+        pdf_paths_to_fetch = _fetch_pdf_paths(
             session,
             harvest_run,
             harvest_run_id,
             source,
             night_progress,
-            partial(get_sso_document_response, pdf_path, validate_can_send),
-            ResponseKind.DOCUMENT,
-            is_sso_pdf,
+            validate_can_send,
             clock,
+            pdf_paths_to_fetch,
         )
 
 

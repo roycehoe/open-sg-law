@@ -12,7 +12,7 @@ from schemas.source_http_response import SourceHttpResponse
 CRAWL_USER_AGENT = "open-sg-law (+https://github.com/roycehoe/open-sg-law/issues)"
 CRAWL_HEADERS = {"User-Agent": CRAWL_USER_AGENT}
 
-SSO_GAP_SECONDS = 60.0
+SSO_GAP_SECONDS = 6.0
 INTERNET_ARCHIVE_GAP_SECONDS = 6.0
 ELITIGATION_GAP_SECONDS = 2.0
 

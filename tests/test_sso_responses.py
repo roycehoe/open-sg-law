@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Optional
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -61,6 +62,11 @@ _LISTED_PDF_PATHS = (
 _OLDER_ACRAA_PATH = "/Act/ACRAA2004?ViewType=Pdf&_=20200101000000"
 _FULL_NIGHT_REQUEST_COUNT = 9
 _FAILURE_HALT_COUNT = 3
+_EXPECTED_BACKOFF_SECONDS = [6, 10, 30, 60, 120, 240, 360]
+_SENDS_PER_EXHAUSTED_REQUEST = 8
+_CHALLENGED_PATHS_THAT_END_THE_NIGHT = 3
+_SENDS_AFTER_TWO_CHALLENGES = 3
+_LADDERS_FOR_ONE_STUBBORN_PDF = 4
 
 
 class _FakeClock:
@@ -97,10 +103,13 @@ class _FakeSso:
         fake_clock: _FakeClock,
         url_to_answer: dict[str, SourceHttpResponse],
         failing_urls: frozenset[str],
+        url_to_challenge_count: dict[str, int],
     ):
         self.fake_clock = fake_clock
         self.url_to_answer = url_to_answer
         self.failing_urls = failing_urls
+        self.url_to_challenge_count = url_to_challenge_count
+        self.backoff_seconds: list[float] = []
         self.requested_urls: list[str] = []
         self.sent_at: list[datetime] = []
         self.call_count = 0
@@ -116,6 +125,9 @@ class _FakeSso:
         if url in self.failing_urls:
             raise OpenSgLawGatewayError(f"SSO request failed for {url}")
         answer = self.url_to_answer[url]
+        if self.url_to_challenge_count.get(url, 0) > 0:
+            self.url_to_challenge_count[url] -= 1
+            answer = _FORBIDDEN_ANSWER
         return answer.model_copy(update={"requested_url": url, "final_url": url})
 
     def get_robots(self, validate_can_send: Callable[[], None]) -> SourceHttpResponse:
@@ -148,9 +160,12 @@ def _install_fake_sso(
     fake_clock: _FakeClock,
     url_to_answer: dict[str, SourceHttpResponse],
     failing_urls: frozenset[str] = frozenset(),
+    url_to_challenge_count: Optional[dict[str, int]] = None,
 ) -> _FakeSso:
-    fake_sso = _FakeSso(fake_clock, url_to_answer, failing_urls)
-    monkeypatch.setattr(SSO_PACER, "sleep", lambda seconds: None)
+    fake_sso = _FakeSso(
+        fake_clock, url_to_answer, failing_urls, url_to_challenge_count or {}
+    )
+    monkeypatch.setattr(SSO_PACER, "sleep", fake_sso.backoff_seconds.append)
     monkeypatch.setattr(
         sso_responses_stage, "get_sso_robots_response", fake_sso.get_robots
     )
@@ -249,7 +264,8 @@ def test_a_403_on_the_first_request_writes_challenged_and_halts(
     assert len(source_responses) == 1
     assert source_responses[0].status_code == _FORBIDDEN_ANSWER.status_code
     assert source_responses[0].body_text == _CHALLENGE_BODY.decode()
-    assert fake_sso.requested_urls == [_ROBOTS_URL]
+    assert fake_sso.requested_urls == [_ROBOTS_URL] * _SENDS_PER_EXHAUSTED_REQUEST
+    assert fake_sso.backoff_seconds == _EXPECTED_BACKOFF_SECONDS
 
 
 def test_a_202_with_an_empty_body_on_a_pdf_writes_challenged(
@@ -268,7 +284,87 @@ def test_a_202_with_an_empty_body_on_a_pdf_writes_challenged(
     assert stored_source.sso_access_state_reason is not None
     assert "SSO answered 202 with 0 bytes" in stored_source.sso_access_state_reason
     assert harvest_run.status == HarvestRunStatus.HALTED
-    assert len(_get_requested_pdf_paths(fake_sso)) == 1
+    assert (
+        len(_get_requested_pdf_paths(fake_sso))
+        == _CHALLENGED_PATHS_THAT_END_THE_NIGHT * _SENDS_PER_EXHAUSTED_REQUEST
+    )
+
+
+def test_a_challenge_that_clears_during_the_backoff_is_not_recorded(
+    scratch_engine: Engine, scratch_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seed_sources(scratch_session)
+    fake_clock = _FakeClock(_NIGHT_START)
+    first_pdf_url = _get_pdf_url(_LISTED_PDF_PATHS[0])
+    fake_sso = _install_fake_sso(
+        monkeypatch,
+        fake_clock,
+        _get_full_night_answers(_PDF_ANSWER),
+        url_to_challenge_count={first_pdf_url: 2},
+    )
+
+    harvest_run = populate_sso_responses(scratch_session, fake_clock)
+
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
+    assert stored_source.sso_access_state == SsoAccessState.SERVING
+    assert harvest_run.status == HarvestRunStatus.SUCCEEDED
+    assert fake_sso.backoff_seconds == _EXPECTED_BACKOFF_SECONDS[:2]
+    assert _get_requested_pdf_paths(fake_sso).count(
+        _LISTED_PDF_PATHS[0]
+    ) == _SENDS_AFTER_TWO_CHALLENGES
+
+
+def test_a_pdf_challenged_through_the_backoff_is_retried_after_the_rest(
+    scratch_engine: Engine, scratch_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seed_sources(scratch_session)
+    fake_clock = _FakeClock(_NIGHT_START)
+    first_pdf_url = _get_pdf_url(_LISTED_PDF_PATHS[0])
+    fake_sso = _install_fake_sso(
+        monkeypatch,
+        fake_clock,
+        _get_full_night_answers(_PDF_ANSWER),
+        url_to_challenge_count={first_pdf_url: _SENDS_PER_EXHAUSTED_REQUEST},
+    )
+
+    harvest_run = populate_sso_responses(scratch_session, fake_clock)
+
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
+    assert stored_source.sso_access_state == SsoAccessState.SERVING
+    assert harvest_run.status == HarvestRunStatus.SUCCEEDED
+    requested_pdf_paths = _get_requested_pdf_paths(fake_sso)
+    assert (
+        requested_pdf_paths[:_SENDS_PER_EXHAUSTED_REQUEST]
+        == [_LISTED_PDF_PATHS[0]] * _SENDS_PER_EXHAUSTED_REQUEST
+    )
+    assert requested_pdf_paths[-1] == _LISTED_PDF_PATHS[0]
+    assert len(requested_pdf_paths) == _SENDS_PER_EXHAUSTED_REQUEST + len(
+        _LISTED_PDF_PATHS
+    )
+
+
+def test_one_pdf_that_stays_challenged_ends_the_night(
+    scratch_engine: Engine, scratch_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seed_sources(scratch_session)
+    fake_clock = _FakeClock(_NIGHT_START)
+    first_pdf_url = _get_pdf_url(_LISTED_PDF_PATHS[0])
+    fake_sso = _install_fake_sso(
+        monkeypatch,
+        fake_clock,
+        _get_full_night_answers(_PDF_ANSWER),
+        url_to_challenge_count={first_pdf_url: 1_000},
+    )
+
+    harvest_run = populate_sso_responses(scratch_session, fake_clock)
+
+    stored_source = get_stored_source(scratch_engine, SourceName.SSO)
+    assert stored_source.sso_access_state == SsoAccessState.CHALLENGED
+    assert harvest_run.status == HarvestRunStatus.HALTED
+    assert (
+        _get_requested_pdf_paths(fake_sso).count(_LISTED_PDF_PATHS[0])
+        == _LADDERS_FOR_ONE_STUBBORN_PDF * _SENDS_PER_EXHAUSTED_REQUEST
+    )
 
 
 def test_a_403_past_the_size_limit_writes_challenged(
@@ -291,7 +387,7 @@ def test_a_403_past_the_size_limit_writes_challenged(
     assert harvest_run.status == HarvestRunStatus.HALTED
     assert harvest_run.halt_reason == stored_source.sso_access_state_reason
     assert len(get_source_responses(scratch_session)) == 1
-    assert fake_sso.call_count == 1
+    assert fake_sso.call_count == _SENDS_PER_EXHAUSTED_REQUEST
 
 
 def test_a_run_that_starts_past_the_size_limit_sends_nothing(

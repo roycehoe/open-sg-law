@@ -31,7 +31,7 @@ Every fetched body goes into a raw table before anything reads it. A body is sto
 The project writes to the Supreme Court and to AGC before it publishes what their terms do not already allow. Legislation is published under SSO clause 13 and eGazette clause 11, which meet their conditions without a letter.
 
 ### Honest, slow requests
-SSO gets automated requests only from 03:00 to 07:00 Singapore time, at one a minute, with a user agent that names the project and no retry after a challenge. Nothing works around a firewall, and no headless browser is used.
+SSO gets automated requests only from 03:00 to 07:00 Singapore time, 6 seconds apart as its `robots.txt` asks, with a user agent that names the project. A challenged request waits and is sent again on a fixed backoff, and a night ends when three URLs in a row stay challenged. No request disguises what it is, and no headless browser is used.
 
 ### One style
 All code follows [STYLE.md](../STYLE.md), copied from hansard-scraper with its domain word changed.

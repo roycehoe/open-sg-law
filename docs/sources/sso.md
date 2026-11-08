@@ -22,11 +22,11 @@ The search pages are never requested.
 
 ## robots.txt
 
-On 5 November 2026 SSO's `robots.txt` said `Crawl-delay: 6` and `Disallow: /search`. This repo sends one request a minute, through `SSO_PACER`, well under that delay.
+On 5 November 2026 SSO's `robots.txt` said `Crawl-delay: 6` and `Disallow: /search`. This repo sends one request every 6 seconds, through `SSO_PACER`, the delay it asks for.
 
 ## The trial of 5 November 2026
 
-At 03:00 SGT a trial script sent requests 8 seconds apart with a browser user agent. SSO answered six of them, then answered with a 202 and an empty body: its firewall's challenge. That trial is why this repo waits a minute between requests and stops at the first challenge.
+At 03:00 SGT a trial script sent requests 8 seconds apart with a browser user agent. SSO answered six of them, then answered with a 202 and an empty body: its firewall's challenge. The repo first waited a minute between requests and stopped at the first challenge because of that trial. On 8 November 2026 Royce moved it to the `robots.txt` delay with the backoff below, before any request had gone out at either rate.
 
 ## Answers
 
@@ -36,11 +36,15 @@ At 03:00 SGT a trial script sent requests 8 seconds apart with a browser user ag
 - **Expected:** a 200 whose body is the kind that was asked for. A PDF starts with `%PDF-`. A listing page is `text/html` and holds `class="non-ajax file-download"`. `robots.txt` is `text/plain`.
 - **Challenge:** everything else. That covers a 202 with or without a body, a 401, a 403, a 429, any 3xx, and a 200 of the wrong kind. It raises `OpenSgLawSsoChallengeError`.
 
-A challenge stops the night. The SSO source is set to CHALLENGED, and nothing more is sent to SSO until Royce runs `python -m scripts.clear_sso_challenge` after AGC replies. A change in SSO's markup would also read as a challenge. That errs toward AGC.
+A challenge starts the backoff below. A night that ends on a challenge sets the SSO source to CHALLENGED, and nothing more is sent to SSO until Royce reads the log and runs `python -m scripts.clear_sso_challenge`. A change in SSO's markup would also read as a challenge. That errs toward AGC.
 
-## No retry, no redirect
+## Backoff on a challenge, no redirect
 
-Each request is sent once. The SSO gateway never calls `send_with_retry`, so a failure is not resent within the night. Redirects are not followed (`allow_redirects=False`), so a 3xx is stored as it came and read as a challenge.
+A challenged request is sent again after 6, 10, 30, 60, 120, 240 and 360 seconds, eight sends over about 14 minutes (`SSO_CHALLENGE_BACKOFF_SECONDS`), with the same user agent. Royce ruled this on 8 November 2026, reversing the earlier rule that any resend after a challenge got around the firewall.
+
+A PDF still challenged after the last wait goes to the end of the list, and the stage moves on to the next PDF. When the list ends it goes back to those PDFs with the same backoff. Three PDFs in a row that stay challenged end the night, with a PDF that gets any other answer resetting the count. A robots file or listing page that stays challenged ends the night too, because the PDF list depends on them. The window check runs before every send, so a backoff that runs past 06:55 sends nothing more.
+
+A failure (404, 5xx or a transport error) is not resent within the night. The SSO gateway never calls `send_with_retry`. Redirects are not followed (`allow_redirects=False`), so a 3xx is stored as it came and read as a challenge.
 
 ## Request order
 

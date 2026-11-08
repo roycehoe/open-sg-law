@@ -10,6 +10,8 @@ from utils.sso_listing import SsoListingRow
 _SINGAPORE = ZoneInfo("Asia/Singapore")
 _WINDOW_START = time(3, 0)
 _WINDOW_CUTOFF = time(6, 55)
+SSO_CHALLENGE_BACKOFF_SECONDS = (6, 10, 30, 60, 120, 240, 360)
+SSO_MAX_CONSECUTIVE_CHALLENGED_PATHS = 3
 
 
 def get_sso_window_text() -> str:
@@ -28,7 +30,7 @@ def validate_can_send_sso_request(
 ) -> None:
     if sso_access_state == SsoAccessState.CHALLENGED:
         raise OpenSgLawSourceStateError(
-            "SSO is CHALLENGED; nothing is sent until clear_sso_challenge runs after AGC replies"
+            "SSO is CHALLENGED; nothing is sent until clear_sso_challenge runs"
         )
     singapore_time = now.astimezone(_SINGAPORE).time()
     if singapore_time < _WINDOW_START:
