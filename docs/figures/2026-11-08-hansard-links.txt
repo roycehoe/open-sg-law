@@ -1,0 +1,34 @@
+Headline, current Acts the site can read section by section: 507 of 523 (96.94%)
+Current Acts with a parsed newest version: 507
+Site role reads legislation, versions and sections: yes
+Acts listed: 523
+Acts with a version from INTERNET_ARCHIVE: 509
+Acts with no version: 14
+Newest versions printed in 1987: 1
+Newest versions printed in 2017: 1
+Newest versions printed in 2021: 186
+Newest versions printed in 2022: 112
+Newest versions printed in 2023: 53
+Newest versions printed in 2024: 87
+Newest versions printed in 2025: 60
+Newest versions printed in 2026: 8
+Newest versions with no printed date: 1
+Versions parsed: 507
+Versions not parsed: 2
+Sections of kind ARTICLE: 246
+Sections of kind SCHEDULE: 598
+Sections of kind SECTION: 26372
+Repealed sections: 617
+Sections on image pages: 16
+Text share, all parsed versions: 99.86%
+Versions under 99% text share: 18
+Versions under 90% text share: 0
+Lowest text share: NSA2022 97.80%
+Lowest text share: PA1938 97.88%
+Lowest text share: MELBO1908 97.88%
+Lowest text share: SBGCPSA1983 97.91%
+Lowest text share: SCCCFA1989 97.98%
+Bills: 2811
+History entries: 9905
+History entries linked to a bill: 5107
+Judgment and subsidiary legislation figures wait for their parked steps
