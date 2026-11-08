@@ -28,6 +28,16 @@ On 5 November 2026 SSO's `robots.txt` said `Crawl-delay: 6` and `Disallow: /sear
 
 At 03:00 SGT a trial script sent requests 8 seconds apart with a browser user agent. SSO answered six of them, then answered with a 202 and an empty body: its firewall's challenge. The repo first waited a minute between requests and stopped at the first challenge because of that trial. On 8 November 2026 Royce moved it to the `robots.txt` delay with the backoff below, before any request had gone out at either rate.
 
+## The block of 9 November 2026
+
+The first SSO night began at 03:02 SGT with `CRAWL_USER_AGENT`. CloudFront answered its first request, for `robots.txt`, with a 403 and a 919-byte "Request blocked" page. All eight sends of the backoff got the same answer, so the run halted with SSO CHALLENGED before any listing page or PDF.
+
+The block is not on the IP address. That morning the same URL loaded in a browser on the same connection, then answered one curl request carrying `CRAWL_USER_AGENT` with the same 403 and `X-Cache: Error from cloudfront`.
+
+The block is older than this repo's first request. `kevanwee/sg-legal-corpus` recorded on 19 September 2026 (commit `020c6d94`) that SSO "rejects non-browser UAs at CloudFront". The trial of 5 November sent a browser user agent from Python's `urllib` and got six answers, so the user agent is the likely trigger. Only AGC can confirm the rule.
+
+Waiting or slowing down will not lift a rule of this kind, and this repo does not send a browser's user agent. SSO stays CHALLENGED until AGC replies.
+
 ## Answers
 
 `get_sso_answer` sorts every answer into one of three kinds. The rule is total.
