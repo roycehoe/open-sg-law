@@ -80,6 +80,7 @@ def coverage_figures(output: Optional[Path]) -> None:
         logger.info(line)
     if output is None:
         return
+    output.parent.mkdir(parents=True, exist_ok=True)
     try:
         with output.open("x") as output_file:
             output_file.write("\n".join(lines) + "\n")

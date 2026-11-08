@@ -18,7 +18,7 @@ from utils.write_target import validate_can_write
 _HTTP_OK = 200
 
 
-def harvest_archive(is_commit: bool) -> None:
+def harvest_archive(is_commit: bool, is_retry_not_found: bool = False) -> None:
     if not is_commit:
         with Session(engine) as session:
             stored_pdf_urls = CRUDSourceResponse(
@@ -41,7 +41,7 @@ def harvest_archive(is_commit: bool) -> None:
     create_db_and_tables()
     with Session(engine) as session:
         harvest_run = populate_archive_responses(
-            session, partial(datetime.now, timezone.utc)
+            session, partial(datetime.now, timezone.utc), is_retry_not_found
         )
         logger.info(
             f"Archive run {harvest_run.id} {harvest_run.status}: {harvest_run.requests_sent} sent,"
@@ -66,5 +66,10 @@ if __name__ == "__main__":
         action="store_true",
         help="send Internet Archive requests now",
     )
+    parser.add_argument(
+        "--retry-not-found",
+        action="store_true",
+        help="retry Act captures previously stored with status 404",
+    )
     arguments = parser.parse_args()
-    harvest_archive(arguments.commit)
+    harvest_archive(arguments.commit, arguments.retry_not_found)

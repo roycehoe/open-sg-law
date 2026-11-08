@@ -40,7 +40,6 @@ from utils.elitigation_judgment import get_elitigation_neutral_citation
 _COURT_FILTER = "SUPCT"
 _FIRST_YEAR = 1965
 _FIRST_PAGE_NUMBER = 1
-_NEUTRAL_CITATION_MARKER = "<title>["
 _BODIES_PER_COMMIT = 100
 _HTTP_OK = 200
 
@@ -180,7 +179,7 @@ def _fetch_year_judgment_urls(
     harvest_run_id: int,
     run_progress: _RunProgress,
     year: int,
-) -> Optional[_YearListing]:
+) -> _YearListing:
     first_listing_response = _fetch_elitigation_response(
         session,
         harvest_run,
@@ -196,7 +195,7 @@ def _fetch_year_judgment_urls(
         _is_listing_page,
     )
     if first_listing_response is None:
-        return None
+        raise OpenSgLawHarvestHaltError(f"{year}: the first listing page was not read")
     first_listing_page = get_elitigation_listing_page_of_response(
         first_listing_response
     )
@@ -237,9 +236,6 @@ def _fetch_year(
     year_listing = _fetch_year_judgment_urls(
         session, harvest_run, harvest_run_id, run_progress, year
     )
-    if year_listing is None:
-        logger.info(f"{year}: the first listing page was not read")
-        return
     for judgment_url in year_listing.judgment_urls:
         if judgment_url in stored_judgment_urls:
             continue
@@ -279,16 +275,18 @@ def populate_elitigation_responses(
         raise OpenSgLawHarvestRunError("Run row has no id after commit")
     harvest_run_id = harvest_run.id
     run_progress = _RunProgress()
-    stored_judgment_urls = set(
-        CRUDSourceResponse(
+    stored_judgment_urls = {
+        source_response.requested_url
+        for source_response in CRUDSourceResponse(
             session
-        ).get_requested_urls_by_source_and_kind_and_status_code_and_body_text_contains(
+        ).get_by_source_and_kind_and_status_code_and_body_text_not_null(
             SourceName.ELITIGATION,
             ResponseKind.DOCUMENT,
             _HTTP_OK,
-            _NEUTRAL_CITATION_MARKER,
         )
-    )
+        if source_response.body_text is not None
+        and get_elitigation_neutral_citation(source_response.body_text) is not None
+    }
     try:
         for year in range(started_at.year, _FIRST_YEAR - 1, -1):
             _fetch_year(

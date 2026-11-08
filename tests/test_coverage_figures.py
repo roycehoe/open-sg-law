@@ -188,6 +188,17 @@ def test_output_writes_the_same_lines(
     assert output.read_text().splitlines() == log_recorder.messages
 
 
+def test_output_creates_missing_parent_directories(
+    scratch_session: Session, log_recorder: _LogRecorder, tmp_path: Path
+) -> None:
+    _seed_figures(scratch_session)
+    output = tmp_path / "missing" / "nested" / "figures.txt"
+
+    coverage_figures(output=output)
+
+    assert output.read_text().splitlines() == log_recorder.messages
+
+
 def test_an_existing_output_path_raises_and_keeps_its_text(
     scratch_session: Session, log_recorder: _LogRecorder, tmp_path: Path
 ) -> None:

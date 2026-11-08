@@ -9,6 +9,7 @@ from sqlmodel import Session
 import populate.archive_responses as archive_responses_stage
 from crud.database_size import CRUDDatabaseSize
 from crud.harvest_run import CRUDHarvestRun
+from crud.source_response import CRUDSourceResponse
 from database.harvest_run import HarvestRun
 from enums import HarvestRunStatus, ResponseKind, SourceName
 from exceptions import (
@@ -18,6 +19,7 @@ from exceptions import (
 )
 from populate.archive_responses import populate_archive_responses
 from schemas.source_http_response import SourceHttpResponse
+from services.source_response import build_source_response
 from tests.listing_seed import (
     FIRST_PAGE_BODY,
     LISTING_CONTENT_TYPE,
@@ -216,6 +218,30 @@ def test_a_stored_capture_is_not_fetched_again(
         *_LISTING_URLS,
         *[original_url for original_url, _timestamp in _LATEST_ACT_CAPTURES[1:]],
     ]
+
+
+@pytest.mark.parametrize("is_retry_not_found", [False, True])
+def test_a_stored_404_is_skipped_unless_retried(
+    scratch_session: Session, monkeypatch: pytest.MonkeyPatch, is_retry_not_found: bool
+) -> None:
+    seed_sources(scratch_session)
+    harvest_run = HarvestRun(source=SourceName.INTERNET_ARCHIVE, started_at=_RUN_TIME - timedelta(days=7))
+    CRUDHarvestRun(scratch_session).create(harvest_run)
+    assert harvest_run.id is not None
+    capture_url = build_archive_capture_url("20251231140314", _AA1906_URL)
+    CRUDSourceResponse(scratch_session).insert_on_conflict_do_nothing(
+        build_source_response(
+            _NOT_FOUND_ANSWER.model_copy(update={"requested_url": capture_url, "final_url": capture_url}),
+            ResponseKind.DOCUMENT, SourceName.INTERNET_ARCHIVE, harvest_run.id,
+        )
+    )
+    scratch_session.commit()
+    fake_archive = _install_fake_archive(monkeypatch, _CDX_ANSWER, _get_full_run_answers(_PDF_ANSWER))
+
+    run = populate_archive_responses(scratch_session, _get_run_time, is_retry_not_found)
+
+    assert run.status == HarvestRunStatus.SUCCEEDED
+    assert (_AA1906_URL in fake_archive.get_requested_original_urls()) == is_retry_not_found
 
 
 def test_a_cdx_answer_that_qualifies_no_capture_fetches_no_pdf(

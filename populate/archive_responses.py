@@ -52,6 +52,7 @@ _ACT_URL_PREFIX = "sso.agc.gov.sg/Act"
 _PDF_MIME_TYPE = "application/pdf"
 _BODIES_PER_COMMIT = 100
 _HTTP_OK = 200
+_HTTP_NOT_FOUND = 404
 _PDF_SIGNATURE = b"%PDF-"
 
 
@@ -265,6 +266,7 @@ def _fetch_act_captures(
     harvest_run: HarvestRun,
     harvest_run_id: int,
     night_progress: _NightProgress,
+    is_retry_not_found: bool,
 ) -> None:
     latest_captures = _fetch_latest_act_captures(
         session, harvest_run, harvest_run_id, night_progress
@@ -276,6 +278,12 @@ def _fetch_act_captures(
             SourceName.INTERNET_ARCHIVE, ResponseKind.DOCUMENT, _HTTP_OK
         )
     )
+    if not is_retry_not_found:
+        stored_capture_urls.update(
+            CRUDSourceResponse(session).get_requested_urls_by_source_and_kind_and_status_code(
+                SourceName.INTERNET_ARCHIVE, ResponseKind.DOCUMENT, _HTTP_NOT_FOUND
+            )
+        )
     skipped_capture_count = 0
     for capture in latest_captures:
         capture_url = build_archive_capture_url(capture.timestamp, capture.original_url)
@@ -300,7 +308,7 @@ def _fetch_act_captures(
 
 
 def populate_archive_responses(
-    session: Session, clock: Callable[[], datetime]
+    session: Session, clock: Callable[[], datetime], is_retry_not_found: bool = False
 ) -> HarvestRun:
     started_at = clock()
     _validate_can_store_more(session)
@@ -326,7 +334,7 @@ def populate_archive_responses(
             night_progress,
             clock().strftime(CAPTURE_TIMESTAMP_FORMAT),
         )
-        _fetch_act_captures(session, harvest_run, harvest_run_id, night_progress)
+        _fetch_act_captures(session, harvest_run, harvest_run_id, night_progress, is_retry_not_found)
         _commit_progress(session, harvest_run, night_progress)
     except OpenSgLawHarvestHaltError as error:
         harvest_run.halt_reason = str(error)

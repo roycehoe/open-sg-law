@@ -47,7 +47,7 @@ class _FakeStage:
         self.scratch_engine = scratch_engine
         self.call_count = 0
 
-    def __call__(self, session: Session, clock: Callable[[], datetime]) -> HarvestRun:
+    def __call__(self, session: Session, clock: Callable[[], datetime], is_retry_not_found: bool) -> HarvestRun:
         self.call_count += 1
         with Session(self.scratch_engine) as stage_session:
             harvest_run = HarvestRun(

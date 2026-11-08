@@ -19,7 +19,7 @@ Fetched on 7 November 2026: `Filter=SUPCT` lists the judgments of all three cour
 
 `Filter=STATECT`, `Filter=FAMCT` and `Filter=ALL` each answer status 200 with a 4,226-byte page reading "A system error has occurred and the requested operation could not be completed." (fixture `tests/fixtures/elitigation/statect-2025-system-error.html`). The sg-legal-corpus project also saw a maintenance notice come back with status 200. No maintenance page could be captured on demand, so no fixture holds one.
 
-A status of 200 does not show that a page holds judgments. A listing page with no total, and a judgment page whose title is not a neutral citation, are failures: the stage stores the body raw like any other, counts a failure, and leaves the URL for the next run. A judgment counts as stored only while a 200 body holding `<title>[` is stored for its URL.
+A status of 200 does not show that a page holds judgments. A listing page with no total, and a judgment page whose title is not a neutral citation, are failures: the stage stores the body raw like any other, counts a failure, and leaves the URL for the next run. A judgment counts as stored when a 200 body has a title the neutral citation parser accepts. A failure on a year's first listing page halts the run. Reruns fetch listing pages again to find new judgments.
 
 ## Pacing
 

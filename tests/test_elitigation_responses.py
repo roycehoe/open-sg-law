@@ -251,7 +251,7 @@ def test_a_judgment_answered_with_a_status_other_than_200_is_a_failure(
     assert harvest_run.failures == _FAILURE_HALT_COUNT
 
 
-def test_a_first_page_with_no_total_is_a_failure_and_skips_the_year(
+def test_a_first_page_with_no_total_halts_the_run(
     scratch_session: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     seed_sources(scratch_session)
@@ -261,7 +261,8 @@ def test_a_first_page_with_no_total_is_a_failure_and_skips_the_year(
 
     harvest_run = populate_elitigation_responses(scratch_session, _get_run_time)
 
-    assert harvest_run.status == HarvestRunStatus.SUCCEEDED
+    assert harvest_run.status == HarvestRunStatus.HALTED
+    assert harvest_run.halt_reason == f"{_RUN_YEAR}: the first listing page was not read"
     assert harvest_run.failures == 1
     assert harvest_run.requests_sent == 1
     assert fake_elitigation.call_count == 1
@@ -269,6 +270,21 @@ def test_a_first_page_with_no_total_is_a_failure_and_skips_the_year(
     assert [source_response.kind for source_response in stored_responses] == [
         ResponseKind.LISTING_PAGE
     ]
+
+
+def test_a_stored_invalid_citation_is_fetched_again(
+    scratch_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seed_sources(scratch_session)
+    invalid_answer = _JUDGMENT_ANSWER.model_copy(
+        update={"body": b"<html><title>[not a citation]</title></html>"}
+    )
+    _seed_stored_judgment(scratch_session, _FIRST_JUDGMENT_URL, invalid_answer)
+    fake_elitigation = _install_fake_elitigation(monkeypatch)
+
+    populate_elitigation_responses(scratch_session, _get_run_time)
+
+    assert _FIRST_JUDGMENT_URL in fake_elitigation.judgment_requests
 
 
 def test_a_gateway_error_counts_as_a_failure(

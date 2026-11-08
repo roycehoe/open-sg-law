@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, cast
+from typing import Iterator, Optional, cast
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, col, func, select
@@ -69,17 +69,29 @@ class CRUDSourceResponse:
         )
         return list(self.session.exec(statement).all())
 
-    def get_requested_urls_by_source_and_kind_and_status_code_and_body_text_contains(
-        self, source: SourceName, kind: ResponseKind, status_code: int, text: str
+    def get_requested_urls_by_source_and_kind_and_status_code(
+        self, source: SourceName, kind: ResponseKind, status_code: int
     ) -> list[str]:
         statement = (
             select(SourceResponse.requested_url)
             .where(SourceResponse.source == source)
             .where(SourceResponse.kind == kind)
             .where(SourceResponse.status_code == status_code)
-            .where(col(SourceResponse.body_text).contains(text))
         )
         return list(self.session.exec(statement).all())
+
+    def get_by_source_and_kind_and_status_code_and_body_text_not_null(
+        self, source: SourceName, kind: ResponseKind, status_code: int
+    ) -> Iterator[SourceResponse]:
+        statement = (
+            select(SourceResponse)
+            .where(SourceResponse.source == source)
+            .where(SourceResponse.kind == kind)
+            .where(SourceResponse.status_code == status_code)
+            .where(col(SourceResponse.body_text).is_not(None))
+            .execution_options(yield_per=50)
+        )
+        yield from self.session.exec(statement)
 
     def get_count_by_source_and_kind_and_status_code(
         self, source: SourceName, kind: ResponseKind, status_code: int
