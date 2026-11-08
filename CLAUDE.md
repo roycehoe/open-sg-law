@@ -69,7 +69,7 @@ Each folder has a strict responsibility boundary. `populate/` is the only layer 
 
 ### Data flow
 
-Each stage is a script that runs one populate module, and each stage reads only what an earlier stage stored. No harvest has run yet: no request goes to a source until the permissions in the vision are in hand, so every table but `source` is empty.
+Each stage is a script that runs one populate module, and each stage reads only what an earlier stage stored. The Internet Archive harvest has run, and the eLitigation harvest reached 1984 before halting on consecutive request failures. eLitigation judgments remain unpublished.
 
 1. **Harvest SSO** (`scripts/harvest_sso.py` + `populate/sso_responses.py` + `gateway/sso.py`): reads the SSO row of `source` and refuses to start while SSO is CHALLENGED or outside its window. Inside the 03:00 to 06:55 SGT window it sends the robots file, the Act listing pages and the Act PDFs, one at a time through the SSO pacer, with no retry and no redirect followed. `services/sso_request.py` holds the window check and the PDF paths to fetch, and `services/sso_answer.py` judges each answer; a challenge sets the access state to CHALLENGED and stops the run. `services/harvest_run.py` holds the run guards (one running run per source, consecutive failures, database size). Each body is stored once per requested URL and SHA-256 through `services/source_response.py` and `crud/source_response.py`. Writes `source_response`, `harvest_run` and the access state on `source`.
 

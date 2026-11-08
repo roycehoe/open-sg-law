@@ -94,7 +94,7 @@ Each runs as `python -m scripts.<name>`, and each one that writes is a dry run u
 | `apply_legislation_aliases` | stores the names each Act is looked up by |
 | `coverage_figures` | logs the coverage figures, and writes nothing to the database |
 
-The harvests and the judgments wait on the permissions above, so no script has run against the sources yet. [CLAUDE.md](CLAUDE.md#scripts-directory) says what each script reads and writes.
+The Internet Archive harvest has run. The eLitigation harvest reached 1984 before halting on consecutive request failures; its judgments remain unpublished. [CLAUDE.md](CLAUDE.md#scripts-directory) says what each script reads and writes.
 
 ## Setup
 
