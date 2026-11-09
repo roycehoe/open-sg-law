@@ -75,3 +75,16 @@ class AliasKind(StrEnum):
     FULL_TITLE = "FULL_TITLE"
     TITLE_WITHOUT_YEAR = "TITLE_WITHOUT_YEAR"
     SSO_CODE = "SSO_CODE"
+
+
+class JudgmentBlockKind(StrEnum):
+    FRONT_MATTER = "FRONT_MATTER"
+    HEADING = "HEADING"
+    PARAGRAPH = "PARAGRAPH"
+    QUOTE = "QUOTE"
+    LIST = "LIST"
+    TABLE = "TABLE"
+    FOOTNOTE = "FOOTNOTE"
+    SIGN_OFF = "SIGN_OFF"
+    COUNSEL = "COUNSEL"
+    PLAIN = "PLAIN"

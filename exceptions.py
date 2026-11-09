@@ -68,3 +68,7 @@ class OpenSgLawSectionParseError(OpenSgLawError):
 
 class OpenSgLawVersionDateError(OpenSgLawError):
     pass
+
+
+class OpenSgLawJudgmentParseError(OpenSgLawError):
+    pass

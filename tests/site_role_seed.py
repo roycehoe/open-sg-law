@@ -13,18 +13,31 @@ _MIGRATION_PATH = (
     Path(__file__).parent.parent / "alembic" / "versions" / "0012_add_site_role.py"
 )
 _MIGRATION_MODULE_NAME = "migration_0012_add_site_role"
+_GRANT_MAP_MIGRATION_PATH = (
+    Path(__file__).parent.parent
+    / "alembic"
+    / "versions"
+    / "0013_add_judgment_tables.py"
+)
+_GRANT_MAP_MIGRATION_MODULE_NAME = "migration_0013_add_judgment_tables"
 _SELECT_PRIVILEGE = "SELECT"
 
 
-def load_site_role_migration() -> ModuleType:
-    module_spec = importlib.util.spec_from_file_location(
-        _MIGRATION_MODULE_NAME, _MIGRATION_PATH
-    )
+def _load_migration(module_name: str, migration_path: Path) -> ModuleType:
+    module_spec = importlib.util.spec_from_file_location(module_name, migration_path)
     assert module_spec is not None
     assert module_spec.loader is not None
     migration = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(migration)
     return migration
+
+
+def load_site_role_migration() -> ModuleType:
+    return _load_migration(_MIGRATION_MODULE_NAME, _MIGRATION_PATH)
+
+
+def load_grant_map_migration() -> ModuleType:
+    return _load_migration(_GRANT_MAP_MIGRATION_MODULE_NAME, _GRANT_MAP_MIGRATION_PATH)
 
 
 def create_site_role(engine: Engine) -> None:

@@ -34,6 +34,7 @@ os.environ["DATABASE_URL"] = _SCRATCH_DATABASE_URL
 import database.act_history_entry  # noqa: F401 registers the table for create_all
 import database.bill  # noqa: F401 registers the table for create_all
 import database.harvest_run  # noqa: F401 registers the table for create_all
+import database.judgment  # noqa: F401 registers the table for create_all
 import database.legislation  # noqa: F401 registers the table for create_all
 import database.legislation_alias  # noqa: F401 registers the table for create_all
 import database.legislation_section  # noqa: F401 registers the table for create_all

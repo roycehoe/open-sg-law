@@ -10,13 +10,13 @@ from services.source_grants import (
 )
 from tests.site_role_seed import (
     has_site_role_select,
-    load_site_role_migration,
+    load_grant_map_migration,
 )
 
 _SELECT_PRIVILEGE = "SELECT"
 
 
-def test_every_table_is_granted_while_every_source_but_elitigation_is_published() -> (
+def test_every_table_but_the_judgment_tables_is_granted_while_elitigation_is_unpublished() -> (
     None
 ):
     published_sources = frozenset(
@@ -25,7 +25,19 @@ def test_every_table_is_granted_while_every_source_but_elitigation_is_published(
         if source_name != SourceName.ELITIGATION
     )
 
-    assert get_table_names_to_grant(published_sources) == sorted(TABLE_NAME_TO_SOURCES)
+    assert get_table_names_to_grant(published_sources) == sorted(
+        table_name
+        for table_name in TABLE_NAME_TO_SOURCES
+        if table_name != "judgment" and table_name != "judgment_block"
+    )
+
+
+def test_publishing_elitigation_grants_the_judgment_tables() -> None:
+    assert get_table_names_to_grant(frozenset({SourceName.ELITIGATION})) == [
+        "judgment",
+        "judgment_block",
+        "source",
+    ]
 
 
 def test_withdrawing_sso_leaves_source_bill_and_bill_report() -> None:
@@ -49,7 +61,7 @@ def test_the_grant_map_names_tables_and_never_the_raw_or_run_table() -> None:
 
 
 def test_the_migration_map_matches_the_grant_map() -> None:
-    migration = load_site_role_migration()
+    migration = load_grant_map_migration()
 
     assert {
         table_name: frozenset(SourceName(source_name) for source_name in source_names)

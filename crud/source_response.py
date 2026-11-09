@@ -155,6 +155,37 @@ class CRUDSourceResponse:
         )
         return cast(bytes, self.session.exec(statement).one())
 
+    def get_document_rows_by_source_and_kind_and_status_code_and_body_text_not_null_newest_first(
+        self, source: SourceName, kind: ResponseKind, status_code: int
+    ) -> list[DocumentRow]:
+        statement = (
+            select(
+                SourceResponse.id,
+                SourceResponse.requested_url,
+                SourceResponse.fetched_at,
+                SourceResponse.source,
+            )
+            .where(SourceResponse.source == source)
+            .where(SourceResponse.kind == kind)
+            .where(SourceResponse.status_code == status_code)
+            .where(col(SourceResponse.body_text).is_not(None))
+            .order_by(col(SourceResponse.fetched_at).desc(), col(SourceResponse.id).desc())
+        )
+        return [
+            DocumentRow(*row)  # pyright: ignore[reportArgumentType] a stored row has an id and a source name
+            for row in self.session.exec(statement).all()
+        ]
+
+    def get_body_text_by_id_and_body_text_not_null(
+        self, source_response_id: int
+    ) -> str:
+        statement = (
+            select(SourceResponse.body_text)
+            .where(col(SourceResponse.id) == source_response_id)
+            .where(col(SourceResponse.body_text).is_not(None))
+        )
+        return cast(str, self.session.exec(statement).one())
+
     def get_body_texts_by_source_and_kind_and_status_code_and_body_text_not_null(
         self, source: SourceName, kind: ResponseKind, status_code: int
     ) -> list[str]:

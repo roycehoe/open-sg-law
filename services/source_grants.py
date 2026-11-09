@@ -11,6 +11,8 @@ TABLE_NAME_TO_SOURCES: dict[str, frozenset[SourceName]] = {
     "bill": frozenset({SourceName.OPENHANSARD_LINKS}),
     "bill_report": frozenset({SourceName.OPENHANSARD_LINKS}),
     "act_history_entry": frozenset({SourceName.OPENHANSARD_LINKS, SourceName.SSO}),
+    "judgment": frozenset({SourceName.ELITIGATION}),
+    "judgment_block": frozenset({SourceName.ELITIGATION}),
 }
 
 
