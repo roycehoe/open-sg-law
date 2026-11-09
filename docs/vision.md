@@ -12,7 +12,7 @@ Fetching a source and publishing it need separate legal bases. The goals below s
 Hold the current consolidated text of every Act and of subsidiary legislation, section by section, each section with a link to its page on Singapore Statutes Online (SSO). The raw body of every fetch is kept exactly as received. The words are shown verbatim, and only layout changes.
 
 ### 2. Act-to-debate links
-Link each Act to the Hansard debates on its bills, by openhansard.sg report id ([ADR 0003](adr/0003-hansard-links-by-report-id.md)). The text of the debates is not held here.
+Link each Act to the Hansard debates on its bills, by openhansard.sg report id ([ADR 0003](adr/0003-hansard-links-by-report-id.md)). Where an entry has no bill of its own, link the Hansard report behind it and say what the link is ([ADR 0007](adr/0007-links-beyond-a-bill.md)). The text of the debates is not held here.
 
 ### 3. Judgments, once permitted
 Hold eLitigation judgments from the Supreme Court, the State Courts and the Family Justice Courts, identified by neutral citation. They are fetched and stored privately now. Nothing about them is published until the Supreme Court agrees in writing ([ADR 0001](adr/0001-ask-before-publishing.md)).

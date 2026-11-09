@@ -3,7 +3,7 @@
   <img alt="Open SG Law" src="docs/images/banner-light.svg">
 </picture>
 
-A free, non-commercial, open-source platform that puts Singapore legislation and court judgments in one place, in plain language a non-lawyer can use, with lawyers as the main audience. It holds Acts and subsidiary legislation and judgments from eLitigation. Each Act links to the Hansard debates on its bills through [openhansard.sg](https://openhansard.sg).
+A free, non-commercial, open-source platform that puts Singapore legislation and court judgments in one place, in plain language a non-lawyer can use, with lawyers as the main audience. It holds Acts and, unpublished until the Supreme Court agrees, judgments from eLitigation. Subsidiary legislation is planned. Each Act links to the Hansard debates on its bills through [openhansard.sg](https://openhansard.sg).
 
 This repository is the scraper and the database. A separate site repository follows, as [roycehoe/hansard](https://github.com/roycehoe/hansard) sits beside [roycehoe/hansard-scraper](https://github.com/roycehoe/hansard-scraper). Its layout follows hansard-scraper's.
 
@@ -94,7 +94,7 @@ Each runs as `python -m scripts.<name>`, and each one that writes is a dry run u
 | `apply_legislation_aliases` | stores the names each Act is looked up by |
 | `coverage_figures` | logs the coverage figures, and writes nothing to the database |
 
-The Internet Archive harvest has run. The eLitigation harvest stopped partway through 1975; its judgments remain unpublished. [CLAUDE.md](CLAUDE.md#scripts-directory) says what each script reads and writes.
+The Internet Archive harvest has run. The eLitigation harvest finished on 9 November 2026; its judgments remain unpublished. [CLAUDE.md](CLAUDE.md#scripts-directory) says what each script reads and writes.
 
 ## Setup
 

@@ -54,7 +54,7 @@ The site removed ten duplicate reports and sends their links to the kept copy. T
 
 ## What the follow-up plan should store
 
-The first dry run here, on 8 November 2026, gave 523 Acts, 9,905 entries, 2,811 bills, 5,827 bill reports and 5,107 links. ADR 0003 says 5,103 entries link to a debate, and that figure is four short.
+The first dry run here, on 8 November 2026, gave 523 Acts, 9,905 entries, 2,811 bills, 5,827 bill reports and 5,107 links. ADR 0003 first said 5,103, four short, and was corrected on 9 November 2026.
 
 ## Tables
 
