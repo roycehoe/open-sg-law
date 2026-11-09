@@ -17,5 +17,5 @@ Consequences.
 
 Alternatives.
 
-- Wait for a takedown, as the Hansard project does. Rejected for the reasons above.
+- Wait for a takedown. Rejected for the reasons above.
 - Publish nothing until every owner replies. Rejected, because SSO and eGazette already give a standing permission and holding legislation back gains nothing.

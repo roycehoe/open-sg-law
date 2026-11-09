@@ -15,7 +15,7 @@ Version 1 is in progress, and nothing is published yet. It ships in three stages
 - Release B: judgments added, once the Supreme Court agrees in writing.
 - Release C: point-in-time versions of legislation added, once AGC grants bulk access to Singapore Statutes Online (SSO).
 
-Letters to the Supreme Court, AGC and the SMU SOLID project ask for those permissions. This project asks first, unlike the Hansard project ([ADR 0001](docs/adr/0001-ask-before-publishing.md)).
+Letters to the Supreme Court, AGC and the SMU SOLID project ask for those permissions. See [ADR 0001](docs/adr/0001-ask-before-publishing.md) for the decision to ask before publishing.
 
 ## Getting the data
 
