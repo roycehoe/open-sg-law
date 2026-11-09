@@ -5,7 +5,8 @@ The Internet Archive's Wayback Machine holds captures of the Act PDFs that Singa
 ## Endpoints
 
 - CDX query: `https://web.archive.org/cdx/search/cdx?url=<prefix>&matchType=prefix&filter=mimetype%3Aapplication%2Fpdf&output=json`. `get_archive_cdx_response` builds it. There is no `fl` parameter, so each row carries the default fields (`urlkey`, `timestamp`, `original`, `mimetype`, `statuscode`, `digest`, `length`), and there is no date range, because the stage takes the latest capture of any year.
-- Capture: `https://web.archive.org/web/<timestamp>id_/<original url>`. `build_archive_capture_url` builds it. The `id_` form returns the captured bytes with no Wayback toolbar. A timestamp with no exact capture redirects to the nearest one, and `requests` follows the redirect, so `final_url` records where the answer landed. The stage asks for its own run time to get the newest capture of a listing page.
+- Listing CDX query: the same URL with `filter=statuscode%3A200` in place of the mimetype filter, and the prefix `sso.agc.gov.sg/Browse/Act/Current/All`. `get_archive_listing_cdx_response` builds it. The stage filters on status because a redirect is also served as HTML.
+- Capture: `https://web.archive.org/web/<timestamp>id_/<original url>`. `build_archive_capture_url` builds it. The `id_` form returns the captured bytes with no Wayback toolbar. A timestamp with no exact capture redirects to the nearest one, and `requests` follows the redirect, so `final_url` records where the answer landed. The stage asks for each capture's exact timestamp from the CDX answer, so a listing page's date is the date of its capture.
 
 ## Pacing
 
@@ -23,3 +24,5 @@ On 4 November 2026 the archive answered 429 to every request for about 45 minute
 ## Which captures count
 
 A capture is an Act's current text when its original URL is `/Act/<code>` with a query of `ViewType` and `_` only (`utils/sso_act_url.py`). A capture with `ValidDate`, `TransactionDate` or `DocDate` in the query is a historical version and is skipped. The latest qualifying capture of each code wins, whatever its year. `services/archive_capture.py` applies the rule.
+
+A capture is a listing page when its original URL is `/Browse/Act/Current/All`, with an optional page index, and its query is exactly `PageSize=20&SortBy=Title&SortOrder=ASC`. The latest capture of each page index wins. The 500-a-page URL that SSO's own harvest asks for has no capture newer than July 2024, while the 20-a-page form has a complete capture of 22 and 23 August 2026. The stage fetches only the page indexes below the page count that page 0 prints, which leaves out a stale capture of page 27 from 2020. Captures of one listing can span days, so the page counts and rows need checking against the printed total after a harvest. Run 10's 27 pages hold 524 rows and 524 codes, equal to the 524 they print.

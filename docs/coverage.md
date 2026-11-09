@@ -7,7 +7,7 @@ What this project collects, how far each part has got, and how it links to Hansa
 | Stratum | Substratum | Source | Release | State |
 |---|---|---|---|---|
 | Consolidated text | Constitution | SSO listing, Internet Archive PDF | A | Held as CONS1963, 246 Articles. SSO lists it among the Acts. |
-| Consolidated text | Acts | SSO listing, Internet Archive PDFs | A | 523 listed, 509 with a version, 507 parsed into sections. |
+| Consolidated text | Acts | SSO listing, Internet Archive PDFs | A | 524 on the newest listing, 490 of them readable section by section. 19 more are held from an older listing. |
 | Consolidated text | Subsidiary legislation | SSO | Follows the Acts and does not hold up Release A (Royce, 8 November 2026) | Nothing fetched. |
 | As-enacted text | Acts Supplement, from 2024 | eGazette | Parked | Nothing fetched. |
 | As-enacted text | Subsidiary Legislation Supplement, from 2024 | eGazette | Parked | Nothing fetched. |
@@ -22,12 +22,12 @@ eGazette and data.gov.sg stay parked until the SSO harvest shows a gap they woul
 
 Every version comes from the Internet Archive, because SSO has served nothing. CloudFront answered all 8 sends of the first SSO night with a 403 on `robots.txt` ([details](sources/sso.md#the-block-of-9-november-2026)).
 
-- The newest listing is from 16 to 19 July 2024. The harvest asked the Internet Archive for November 2026 and got its nearest capture. It shows 523 Acts, and each is flagged as on the newest listing because no other listing exists, so the flag can show no repeal since then.
-- About 17 new Acts passed since July 2024 have no row, going by the titles of 24 bills passed since then. The Act PDFs were captured later than the list.
-- The Internet Archive holds a complete 27-page listing captured on 22 and 23 August 2026, at 20 Acts a page. The harvest requests only the 500-a-page URL, so that listing is not stored.
-- Each Act has one version at most, the latest plain capture. Of the 509 versions, 339 were captured in 2024, 105 in 2025 and 65 in 2026, so an Act amended after its capture is out of date here.
-- The 27,216 stored provisions are 26,372 sections, 246 Articles and 598 schedules.
-- 14 Acts have no version: CAASA2009, CCA2006, CDCSA2001, CEA2000, CPFA1953, FAA2001, FCA1959, FNECDA1949, GIA1934, MA1975, MRA1997, NRDA2007, NUSCA2005 and WICA2019.
+- The newest listing is the Internet Archive's capture of 22 and 23 August 2026, 27 pages at 20 Acts a page. Its 524 rows and 524 codes equal the 524 it prints.
+- Against the July 2024 listing it adds 20 Acts and leaves out 19. The 19 keep their rows and versions, flagged as not on the newest listing. The listing prints no reason and several look like renames (Sewerage and Drainage Act 1999 and Sewerage, Drainage and Coastal Protection Act 1999), so the flag does not mean repealed.
+- Of the 20 added Acts, only ACA2022 and PWA2024 have a version. CSPA2024, GEWCA2021, GSFDA2024 and SLPA2022 have only dated captures at the Internet Archive, which the harvest skips. The other 14 have no PDF capture there. All 20 listing rows link a PDF on SSO, and none of the 20 has Legislative History entries here yet.
+- The 511 Acts with a version hold 512 versions, because TSFA2002 gained a newer capture. Each newest version is the latest plain capture: 339 were captured in 2024, 106 in 2025 and 66 in 2026, so an Act amended after its capture is out of date here.
+- The 27,477 stored provisions are 26,621 sections, 246 Articles and 610 schedules.
+- 32 Acts have no version. 18 are the added Acts above. The others are CAASA2009, CCA2006, CDCSA2001, CEA2000, CPFA1953, FAA2001, FCA1959, FNECDA1949, GIA1934, MA1975, MRA1997, NRDA2007, NUSCA2005 and WICA2019. The Internet Archive answered 404 for the latest capture of 13 of them, and requests for CEA2000's capture of 4 September 2026 failed in harvest runs 11 and 12.
 - 2 versions did not parse into sections: CYPA1993 and ISA1965.
 
 ## Judgments
