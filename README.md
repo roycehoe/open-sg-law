@@ -25,9 +25,9 @@ The database is not published. Each source has its own terms, and a table is ope
 
 | Source | Fetched | Published |
 |---|---|---|
-| SSO | Yes, 03:00 to 07:00 SGT, one request every 6 seconds | Yes, under clause 13 |
-| eGazette | Yes | Yes, under clause 11 |
-| data.gov.sg eGazette indexes | Yes | Yes, under the Open Data Licence |
+| SSO | Planned, 03:00 to 07:00 SGT, one request every 6 seconds. [CloudFront has blocked it so far](docs/sources/sso.md#the-block-of-9-november-2026). | Yes, under clause 13 |
+| eGazette | Parked, nothing fetched | Yes, under clause 11 |
+| data.gov.sg eGazette indexes | Parked, nothing fetched | Yes, under the Open Data Licence |
 | Internet Archive copies of SSO | Yes, about 10 a minute | Probably, under clause 13 |
 | eLitigation judgments (Supreme Court, State Courts, Family Justice Courts) | Yes | After the Supreme Court's written yes |
 | Act-to-debate links | Copied from the bill-debate-linking job in hansard-scraper | Links only, no Hansard text |
@@ -94,7 +94,7 @@ Each runs as `python -m scripts.<name>`, and each one that writes is a dry run u
 | `apply_legislation_aliases` | stores the names each Act is looked up by |
 | `coverage_figures` | logs the coverage figures, and writes nothing to the database |
 
-The Internet Archive harvest has run. The eLitigation harvest reached 1984 before halting on consecutive request failures; its judgments remain unpublished. [CLAUDE.md](CLAUDE.md#scripts-directory) says what each script reads and writes.
+The Internet Archive harvest has run. The eLitigation harvest stopped partway through 1975; its judgments remain unpublished. [CLAUDE.md](CLAUDE.md#scripts-directory) says what each script reads and writes.
 
 ## Setup
 
@@ -115,6 +115,7 @@ python -m alembic upgrade head
 ## Documentation
 
 - [Vision](docs/vision.md): the project's goals and how progress is measured.
+- [Coverage](docs/coverage.md): what is collected, how far each category has got, and how it links to Hansard.
 - [Data-loss register](docs/data-loss-register.md): every step that drops or changes source text.
 - [Backlog](docs/backlog.md): the sources left out of version 1.
 - [Decision records](docs/adr/): why the project works the way it does.
