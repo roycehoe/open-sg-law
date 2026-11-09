@@ -1,6 +1,6 @@
 # eLitigation
 
-The Supreme Court's eLitigation service publishes the written judgments of the Supreme Court, the State Courts and the Family Justice Courts. `gateway/elitigation.py` fetches its listing pages and its judgment pages, and `populate/elitigation_responses.py` (run by `scripts/harvest_elitigation.py`) walks them and stores every body raw. Nothing parses a judgment's text yet.
+The Supreme Court's eLitigation service publishes the written judgments of the Supreme Court, the State Courts and the Family Justice Courts. `gateway/elitigation.py` fetches its listing pages and its judgment pages, and `populate/elitigation_responses.py` (run by `scripts/harvest_elitigation.py`) walks them and stores every body raw. `scripts/apply_judgments.py` parses the stored pages into `judgment` and `judgment_block`.
 
 ## Endpoints
 
@@ -26,10 +26,25 @@ A status of 200 does not show that a page holds judgments. A listing page with n
 Run 9 walked every year from 2026 down to 1965. Against the newest stored listing page of every year, the listings print 16,301 judgments and link 16,300 distinct pages, and all 16,300 are stored.
 
 - The listing for 2015 shows `/gd/s/2015_SGHC_3` twice, so the log reports 426 of 427 for that year.
-- `/gd/s/2013_SGHC115_` is stored, but its title prints as `[2013] SGHC115`, and the citation check rejects a title with no space before the number. Each run fetches the page again and counts one failure, which is run 9's one failure, and the log reports 346 of 347 for 2013.
+- `/gd/s/2013_SGHC115_` is stored, and its title prints as `[2013] SGHC115`. The citation check then rejected a title with no space before the number, so each run fetched the page again and counted one failure, which is run 9's one failure, and the log reports 346 of 347 for 2013. The check now accepts that title.
 - Three stored bodies from run 4 are the maintenance notices above. A later run stored the judgment at each of those URLs.
 
+`/gd/s/2015_SGHCR_2` and `/gd/s/2015_SGHCR_02` are the same judgment under two URLs. Both are stored, and each has its own `judgment` row with the citation `[2015] SGHCR 2`.
+
 The code SGFC means two courts. The 80 pages from 1965 to 1969 are the Federal Court of the Republic of Singapore, and the 149 from 2024 on are the Family Courts.
+
+## Page layouts
+
+Every judgment page holds the judgment in `#divJudgement`, in one of two layouts. Neither depends only on the year.
+
+- The header layout covers 1965 to 1999 and 2016 on. Its first block runs down to an `<hr>`, and the case name, coram and dates follow in styles such as `HN-CaseName` and `HN-Coram`.
+- The info-table layout covers 2000 to 2015, 5,578 pages in all. A table `#info-table` prints Case Number, Decision Date, Tribunal/Court, Coram, Counsel Name(s) and Parties. It prints no catchwords.
+
+Text is mostly in styles named `Judg-1`, `Judg-Heading-1`, `Judg-Quote-0` and so on, whose spelling varies (`Judg-quote-1`, `Judg-Headg-1`). `source_style` keeps the spelling and `kind` groups them. Many pages from the early 2000s, and a few recent State Courts and Family Justice Courts pages, use plain `<p>` or `txt-body` paragraphs, and those blocks have kind PLAIN.
+
+Since about 2010 a footnote sits in a pop-up inside its paragraph, reached by a numbered button. The parser moves each pop-up to a FOOTNOTE block straight after that paragraph and leaves the button's number in the paragraph's text.
+
+`[2022] SGHC 109` holds no text in its stored page. Its `#divJudgement` is only a script tag for `/Scripts/gdviewer/sghc109.js`, which the harvest does not fetch.
 
 ## Pacing
 

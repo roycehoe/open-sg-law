@@ -32,7 +32,7 @@ Every version comes from the Internet Archive, because SSO has served nothing. C
 
 ## Judgments
 
-eLitigation holds the judgments of three court groups under one listing. The harvest stores each judgment page raw. Nothing parses a judgment yet, and none is published until the Supreme Court agrees in writing ([ADR 0001](adr/0001-ask-before-publishing.md)). The court names below are our reading of the citation codes and of the courts the pages print.
+eLitigation holds the judgments of three court groups under one listing. The harvest stores each judgment page raw. `scripts/apply_judgments.py` parses them into 16,299 judgments and 2,389,271 blocks. The one page it cannot parse, `[2022] SGHC 109`, holds no text. None is published until the Supreme Court agrees in writing ([ADR 0001](adr/0001-ask-before-publishing.md)). The court names below are our reading of the citation codes and of the courts the pages print.
 
 | Stratum | Substratum | Citation code | Judgments stored |
 |---|---|---|---|

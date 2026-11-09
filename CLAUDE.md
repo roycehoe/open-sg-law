@@ -91,6 +91,8 @@ Each stage is a script that runs one populate module, and each stage reads only 
 
 10. **Harvest eLitigation** (`scripts/harvest_elitigation.py` + `populate/elitigation_responses.py` + `gateway/elitigation.py`): for each year from the current year down to 1965 it fetches every listing page with the `SUPCT` filter (which lists all three courts, see `docs/sources/elitigation.md`), then each listed judgment page that has no stored 200 body holding a neutral citation. `utils/elitigation_listing.py` reads the total, the page count and each row's judgment path and printed citation, and `utils/elitigation_judgment.py` reads a judgment page's citation. A 200 body with no total or no citation is stored raw and counts as a failure. Guards and storage are stage 1's, with no time window. Ends with one log line per year. Writes `source_response` and `harvest_run`. The source stays UNPUBLISHED.
 
+11. **Parse judgments** (`scripts/apply_judgments.py` + `populate/judgments.py` + `services/judgment.py`): reads the stored judgment pages newest first and takes the newest body of each URL whose title is a neutral citation. Walks `#divJudgement` in printed order and makes one block per named style, unnamed paragraph, table or footnote pop-up, reading the case details from the header or the older info table. A page that will not parse is listed with the reason and the run goes on. One transaction per judgment, and a judgment that did not change is not rewritten. Writes `judgment` and `judgment_block`. The source stays UNPUBLISHED.
+
 Not built: the eGazette and data.gov.sg stages, and subsidiary legislation. Each waits on real pages to test against or on requests that may not go out yet, as the run's parked list, kept outside git, records.
 
 ### Database models
@@ -107,6 +109,9 @@ Every enum column is `Text` with a check constraint, so a row loaded from the da
 - `bill`: one row per bill the act-links plan found, with its title as printed, our `title_key` for matching, the first and last sitting dates of its debates and whether it passed.
 - `bill_report`: one row per Hansard report of a bill's debate, with the SPRS report id as printed, the openhansard.sg URL built from it, the report type, sitting date and title, and the Hansard row id for tracing only.
 - `act_history_entry`: one row per entry of an Act's Legislative History, from the act-links plan. `printed_text`, `printed_law_number`, `printed_title` and `printed_bill_number` are as printed, and the four reading and commencement dates are the plan's reading of them. `bill_id` and `bill_link_source` say which bill the entry links to and by which rule, and stay NULL when no rule found one.
+
+- `judgment`: one row per judgment page, keyed by its eLitigation URL, with the neutral citation and case name as printed, the printed court, case number, coram, counsel, catchwords and decision date, `decision_date` as our reading of the printed one, the two character counts the parser compares, and the `source_response` row it came from.
+- `judgment_block`: one row per block of a judgment, in printed order, with its text as printed, `source_style` (the court's own style name, such as `Judg-Heading-2`), `kind` (`JudgmentBlockKind`, our grouping of those styles) and `printed_number`, the paragraph or footnote number we read from it. Line breaks are kept. Table cells are separated by tabs and rows by line breaks.
 
 ### Site role
 
@@ -126,6 +131,7 @@ Every script runs as `python -m scripts.<name>`. A write script is a dry run unl
 - `apply_legislation_versions.py`: reads the stored Act PDFs and CDX answers and builds one version per PDF, marking each Act's newest. Writes `legislation_version`. A dry run unless `--commit`.
 - `apply_legislation_sections.py`: parses each stored version's PDF into sections, one transaction per version, and lists each version it cannot parse with the reason. Writes `legislation_section` and the two character counts on `legislation_version`. A dry run unless `--commit`.
 - `apply_legislation_aliases.py`: reads the stored `legislation` rows and stores each Act's aliases. Writes `legislation_alias`. A dry run unless `--commit`.
+- `apply_judgments.py`: reads the stored judgment pages, parses each into a judgment and its blocks, and lists each page it cannot parse with the reason. Writes `judgment` and `judgment_block`. A dry run unless `--commit`.
 - `coverage_figures.py`: read only. Logs the coverage figures for versions, sections and Hansard links; `--output` also writes them to a file under `docs/figures/`, and refuses one that exists.
 
 ## Module structure
@@ -134,7 +140,7 @@ Every script runs as `python -m scripts.<name>`. A write script is a dry run unl
 open-sg-law/
 │
 ├── settings.py                      # AppSettings: DATABASE_URL and the source base URLs
-├── enums.py                         # SourceName, PublishStatus, SsoAccessState, HarvestRunStatus, ResponseKind, SsoAnswer, ActHistoryEntryKind, BillLinkSource, ActHistoryDefect, LegislationSectionKind, AliasKind
+├── enums.py                         # SourceName, PublishStatus, SsoAccessState, HarvestRunStatus, ResponseKind, SsoAnswer, ActHistoryEntryKind, BillLinkSource, ActHistoryDefect, LegislationSectionKind, AliasKind, JudgmentBlockKind
 ├── exceptions.py                    # OpenSgLawError and every subclass
 ├── logs.py                          # Loguru logger setup
 │
@@ -162,6 +168,7 @@ open-sg-law/
 │   ├── legislation_version.py       # Printed version date, archive capture and newest-version rules
 │   ├── legislation_section.py       # PDF lines → sections, Articles and schedules under Part and Division headings
 │   ├── legislation_alias.py         # Legislation rows → planned aliases
+│   ├── judgment.py                  # Judgment page → case details and blocks in printed order
 │   └── source_grants.py             # TABLE_NAME_TO_SOURCES and the tables the site role may read
 │
 ├── database/                        # SQLModel table definitions
@@ -173,6 +180,7 @@ open-sg-law/
 │   ├── legislation_version.py       # LegislationVersion
 │   ├── legislation_section.py       # LegislationSection, with its search vector
 │   ├── legislation_alias.py         # LegislationAlias
+│   ├── judgment.py                  # Judgment and JudgmentBlock
 │   ├── bill.py                      # Bill and BillReport
 │   └── act_history_entry.py         # ActHistoryEntry
 │
@@ -187,6 +195,8 @@ open-sg-law/
 │   ├── bill.py
 │   ├── bill_report.py
 │   ├── act_history_entry.py
+│   ├── judgment.py
+│   ├── judgment_block.py
 │   ├── source_grant.py              # The site role's SELECT grants: read, grant, revoke
 │   ├── database_size.py             # The database's size in bytes
 │   └── vacuum.py                    # vacuum_count and VACUUM (ANALYZE) for a table the caller names
@@ -200,6 +210,7 @@ open-sg-law/
 │   ├── legislation_versions.py      # Plans and writes versions from stored PDFs
 │   ├── legislation_sections.py      # Parses and writes the sections of each version
 │   ├── legislation_aliases.py       # Plans and writes aliases
+│   ├── judgments.py                 # Parses and writes the judgment of each stored page
 │   ├── coverage_figures.py          # Reads the coverage figures
 │   └── written_tables.py            # VACUUM (ANALYZE) the tables a write script wrote, and check the count rose
 │
@@ -226,8 +237,9 @@ open-sg-law/
 │   ├── apply_legislation_versions.py
 │   ├── apply_legislation_sections.py
 │   ├── apply_legislation_aliases.py
+│   ├── apply_judgments.py
 │   └── coverage_figures.py
 │
-├── alembic/versions/                # Hand-written migrations 0001 to 0012
+├── alembic/versions/                # Hand-written migrations 0001 to 0013
 └── tests/                           # Tests on the scratch database, fixtures and their SOURCES.md
 ```
