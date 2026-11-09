@@ -7,6 +7,7 @@ from services.archive_capture import (
     CdxCapture,
     get_cdx_captures,
     get_latest_act_captures,
+    get_latest_listing_captures,
 )
 from tests.listing_seed import OFFLINE_PAGE_BODY
 
@@ -38,8 +39,39 @@ _ANSWER_WITH_SHORT_ROW_TEXT = (
 )
 
 
+_LISTING_BASE_URL = "https://sso.agc.gov.sg/Browse/Act/Current/All"
+_LISTING_QUERY = "?PageSize=20&SortBy=Title&SortOrder=ASC"
+_FIRST_LISTING_URL = f"{_LISTING_BASE_URL}{_LISTING_QUERY}"
+_SECOND_LISTING_URL = f"{_LISTING_BASE_URL}/1{_LISTING_QUERY}"
+
+
 def _build_capture(original_url: str, timestamp: str) -> CdxCapture:
     return CdxCapture(original_url=original_url, timestamp=timestamp, digest="")
+
+
+def test_the_latest_capture_of_each_listing_page_is_kept() -> None:
+    earlier_capture = _build_capture(_FIRST_LISTING_URL, "20240716234218")
+    later_capture = _build_capture(_FIRST_LISTING_URL, "20260822151720")
+    second_page_capture = _build_capture(_SECOND_LISTING_URL, "20260823093719")
+
+    assert get_latest_listing_captures(
+        [later_capture, earlier_capture, second_page_capture]
+    ) == {0: later_capture, 1: second_page_capture}
+
+
+@pytest.mark.parametrize(
+    "original_url",
+    [
+        f"{_LISTING_BASE_URL}?PageSize=500&SortBy=Title&SortOrder=ASC",
+        f"{_LISTING_BASE_URL}?PageSize=20&SortBy=YearOfCommencement&SortOrder=DESC",
+        f"{_LISTING_BASE_URL}{_LISTING_QUERY}&_=20260822151720",
+        "https://sso.agc.gov.sg/Browse/Act/Current",
+    ],
+)
+def test_another_form_of_listing_url_is_not_a_listing_capture(
+    original_url: str,
+) -> None:
+    assert get_latest_listing_captures([_build_capture(original_url, "20260822151720")]) == {}
 
 
 def test_the_cltpa_answer_gives_four_captures_with_their_digests() -> None:

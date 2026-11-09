@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 
 from pydantic import ValidationError
@@ -9,6 +10,10 @@ from utils.sso_act_url import get_sso_act_pdf
 _ORIGINAL_FIELD = "original"
 _TIMESTAMP_FIELD = "timestamp"
 _DIGEST_FIELD = "digest"
+# NOTE: unlike SSO's own 500-a-page URL, only this form has recent complete captures.
+_LISTING_CAPTURE_PATTERN = re.compile(
+    r"/Browse/Act/Current/All(?:/(\d+))?\?PageSize=20&SortBy=Title&SortOrder=ASC$"
+)
 
 
 @dataclass(frozen=True)
@@ -65,3 +70,16 @@ def get_latest_act_captures(cdx_captures: list[CdxCapture]) -> list[CdxCapture]:
         if stored_capture is None or cdx_capture.timestamp > stored_capture.timestamp:
             sso_code_to_capture[sso_act_pdf.sso_code] = cdx_capture
     return [sso_code_to_capture[sso_code] for sso_code in sorted(sso_code_to_capture)]
+
+
+def get_latest_listing_captures(cdx_captures: list[CdxCapture]) -> dict[int, CdxCapture]:
+    page_index_to_capture: dict[int, CdxCapture] = {}
+    for cdx_capture in cdx_captures:
+        match = _LISTING_CAPTURE_PATTERN.search(cdx_capture.original_url)
+        if match is None:
+            continue
+        page_index = 0 if match.group(1) is None else int(match.group(1))
+        stored_capture = page_index_to_capture.get(page_index)
+        if stored_capture is None or cdx_capture.timestamp > stored_capture.timestamp:
+            page_index_to_capture[page_index] = cdx_capture
+    return page_index_to_capture

@@ -21,6 +21,7 @@ from exceptions import (
 from gateway.internet_archive import (
     get_archive_capture_response,
     get_archive_cdx_response,
+    get_archive_listing_cdx_response,
 )
 from logs import logger
 from schemas.source_http_response import SourceHttpResponse
@@ -28,6 +29,7 @@ from services.archive_capture import (
     CdxCapture,
     get_cdx_captures,
     get_latest_act_captures,
+    get_latest_listing_captures,
 )
 from services.harvest_run import (
     get_stale_run_cutoff,
@@ -40,15 +42,10 @@ from services.source_response import (
     get_body_text,
     get_sso_listing_page_of_response,
 )
-from utils.archive_capture_url import (
-    CAPTURE_TIMESTAMP_FORMAT,
-    build_archive_capture_url,
-)
-from utils.sso_listing import (
-    build_sso_listing_url,
-)
+from utils.archive_capture_url import build_archive_capture_url
 
 _ACT_URL_PREFIX = "sso.agc.gov.sg/Act"
+_LISTING_URL_PREFIX = "sso.agc.gov.sg/Browse/Act/Current/All"
 _PDF_MIME_TYPE = "application/pdf"
 _BODIES_PER_COMMIT = 100
 _HTTP_OK = 200
@@ -190,58 +187,19 @@ def _is_listing_page(source_http_response: SourceHttpResponse) -> bool:
     return True
 
 
-def _fetch_listing_captures(
+def _fetch_cdx_captures(
     session: Session,
     harvest_run: HarvestRun,
     harvest_run_id: int,
     night_progress: _NightProgress,
-    capture_timestamp: str,
-) -> None:
-    first_listing_response = _fetch_archive_response(
-        session,
-        harvest_run,
-        harvest_run_id,
-        night_progress,
-        partial(
-            get_archive_capture_response,
-            capture_timestamp,
-            build_sso_listing_url(page_index=0),
-        ),
-        ResponseKind.LISTING_PAGE,
-        _is_listing_page,
-    )
-    if first_listing_response is None:
-        return
-    for page_index in range(
-        1, get_sso_listing_page_of_response(first_listing_response).page_count
-    ):
-        _fetch_archive_response(
-            session,
-            harvest_run,
-            harvest_run_id,
-            night_progress,
-            partial(
-                get_archive_capture_response,
-                capture_timestamp,
-                build_sso_listing_url(page_index),
-            ),
-            ResponseKind.LISTING_PAGE,
-            _is_listing_page,
-        )
-
-
-def _fetch_latest_act_captures(
-    session: Session,
-    harvest_run: HarvestRun,
-    harvest_run_id: int,
-    night_progress: _NightProgress,
+    send_request: Callable[[], SourceHttpResponse],
 ) -> list[CdxCapture]:
     cdx_response = _send_and_store_request(
         session,
         harvest_run,
         harvest_run_id,
         night_progress,
-        partial(get_archive_cdx_response, _ACT_URL_PREFIX, _PDF_MIME_TYPE),
+        send_request,
         ResponseKind.CDX_ANSWER,
     )
     if cdx_response is None:
@@ -255,10 +213,63 @@ def _fetch_latest_act_captures(
     if cdx_answer_text is None:
         raise OpenSgLawHarvestHaltError("The CDX answer is not text")
     try:
-        cdx_captures = get_cdx_captures(cdx_answer_text)
+        return get_cdx_captures(cdx_answer_text)
     except OpenSgLawCdxAnswerError as error:
         raise OpenSgLawHarvestHaltError(str(error)) from error
-    return get_latest_act_captures(cdx_captures)
+
+
+def _fetch_listing_capture(
+    session: Session,
+    harvest_run: HarvestRun,
+    harvest_run_id: int,
+    night_progress: _NightProgress,
+    capture: CdxCapture,
+) -> Optional[SourceHttpResponse]:
+    return _fetch_archive_response(
+        session,
+        harvest_run,
+        harvest_run_id,
+        night_progress,
+        partial(get_archive_capture_response, capture.timestamp, capture.original_url),
+        ResponseKind.LISTING_PAGE,
+        _is_listing_page,
+    )
+
+
+def _fetch_listing_captures(
+    session: Session,
+    harvest_run: HarvestRun,
+    harvest_run_id: int,
+    night_progress: _NightProgress,
+) -> None:
+    page_index_to_capture = get_latest_listing_captures(
+        _fetch_cdx_captures(
+            session,
+            harvest_run,
+            harvest_run_id,
+            night_progress,
+            partial(get_archive_listing_cdx_response, _LISTING_URL_PREFIX),
+        )
+    )
+    first_capture = page_index_to_capture.get(0)
+    if first_capture is None:
+        logger.warning("The CDX answer holds no capture of the first listing page")
+        return
+    first_listing_response = _fetch_listing_capture(
+        session, harvest_run, harvest_run_id, night_progress, first_capture
+    )
+    if first_listing_response is None:
+        return
+    for page_index in range(
+        1, get_sso_listing_page_of_response(first_listing_response).page_count
+    ):
+        capture = page_index_to_capture.get(page_index)
+        if capture is None:
+            logger.warning(f"The CDX answer holds no capture of listing page {page_index}")
+            continue
+        _fetch_listing_capture(
+            session, harvest_run, harvest_run_id, night_progress, capture
+        )
 
 
 def _fetch_act_captures(
@@ -268,8 +279,14 @@ def _fetch_act_captures(
     night_progress: _NightProgress,
     is_retry_not_found: bool,
 ) -> None:
-    latest_captures = _fetch_latest_act_captures(
-        session, harvest_run, harvest_run_id, night_progress
+    latest_captures = get_latest_act_captures(
+        _fetch_cdx_captures(
+            session,
+            harvest_run,
+            harvest_run_id,
+            night_progress,
+            partial(get_archive_cdx_response, _ACT_URL_PREFIX, _PDF_MIME_TYPE),
+        )
     )
     stored_capture_urls = set(
         CRUDSourceResponse(
@@ -327,13 +344,7 @@ def populate_archive_responses(
     harvest_run_id = harvest_run.id
     night_progress = _NightProgress()
     try:
-        _fetch_listing_captures(
-            session,
-            harvest_run,
-            harvest_run_id,
-            night_progress,
-            clock().strftime(CAPTURE_TIMESTAMP_FORMAT),
-        )
+        _fetch_listing_captures(session, harvest_run, harvest_run_id, night_progress)
         _fetch_act_captures(session, harvest_run, harvest_run_id, night_progress, is_retry_not_found)
         _commit_progress(session, harvest_run, night_progress)
     except OpenSgLawHarvestHaltError as error:

@@ -18,6 +18,7 @@ from gateway.http import (
 from gateway.internet_archive import (
     get_archive_capture_response,
     get_archive_cdx_response,
+    get_archive_listing_cdx_response,
 )
 from gateway.sso import (
     get_sso_document_response,
@@ -235,6 +236,18 @@ def test_archive_gateways_send_the_user_agent_and_are_paced(
     assert capture_response.requested_url == _ARCHIVE_CAPTURE_URL
     assert recorded_archive_waits[0] == 0.0
     assert recorded_archive_waits[1] > 0.0
+
+
+def test_the_archive_listing_cdx_query_filters_on_the_status_code(
+    recorded_archive_waits: list[float], recorded_requests: list[_RecordedRequest]
+) -> None:
+    get_archive_listing_cdx_response(_ARCHIVE_URL_PREFIX)
+
+    assert len(recorded_archive_waits) == 1
+    assert "matchType=prefix" in recorded_requests[0].url
+    assert "filter=statuscode%3A200" in recorded_requests[0].url
+    assert "mimetype" not in recorded_requests[0].url
+    assert "output=json" in recorded_requests[0].url
 
 
 def test_an_archive_429_waits_300_seconds_three_times_then_fails(

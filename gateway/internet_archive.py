@@ -15,6 +15,7 @@ from settings import settings
 from utils.archive_capture_url import build_archive_capture_url
 
 _CDX_PATH = "/cdx/search/cdx"
+_STATUS_OK_FILTER = "statuscode:200"
 _HTTP_TOO_MANY_REQUESTS = 429
 _TOO_MANY_REQUESTS_WAIT_SECONDS = 300
 _MAX_TOO_MANY_REQUESTS_WAITS = 3
@@ -53,16 +54,24 @@ def _get_response(url: str) -> SourceHttpResponse:
         ) from error
 
 
-def get_archive_cdx_response(url_prefix: str, mime_type: str) -> SourceHttpResponse:
+def _get_cdx_response(url_prefix: str, capture_filter: str) -> SourceHttpResponse:
     query = urlencode(
         {
             "url": url_prefix,
             "matchType": "prefix",
-            "filter": f"mimetype:{mime_type}",
+            "filter": capture_filter,
             "output": "json",
         }
     )
     return _get_response(f"{settings.internet_archive_base_url}{_CDX_PATH}?{query}")
+
+
+def get_archive_cdx_response(url_prefix: str, mime_type: str) -> SourceHttpResponse:
+    return _get_cdx_response(url_prefix, f"mimetype:{mime_type}")
+
+
+def get_archive_listing_cdx_response(url_prefix: str) -> SourceHttpResponse:
+    return _get_cdx_response(url_prefix, _STATUS_OK_FILTER)
 
 
 def get_archive_capture_response(
