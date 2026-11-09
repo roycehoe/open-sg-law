@@ -168,17 +168,17 @@ def test_a_plain_page_reads_the_info_table_and_keeps_its_paragraphs() -> None:
     )
 
 
-def test_a_real_page_lands_all_its_text_in_blocks() -> None:
+def test_a_page_in_the_court_markup_lands_all_its_text_in_blocks() -> None:
     parsed_judgment = get_parsed_judgment(
-        (_FIXTURES_DIRECTORY / "judgment-2025-sghc-267.html").read_text()
+        (_FIXTURES_DIRECTORY / "made-up-high-court-judgment.html").read_text()
     )
 
-    assert parsed_judgment.neutral_citation == "[2025] SGHC 267"
+    assert parsed_judgment.neutral_citation == "[2099] SGHC 1"
     assert (
         parsed_judgment.details.case_name
-        == "Wish Controls Pte Ltd v Trident Water Systems Pte Ltd"
+        == "Made Up Holdings Pte Ltd v Invented Supplies Pte Ltd"
     )
-    assert parsed_judgment.decision_date == date(2025, 12, 31)
+    assert parsed_judgment.decision_date == date(2099, 12, 31)
     assert (
         parsed_judgment.block_character_count == parsed_judgment.body_character_count
     )

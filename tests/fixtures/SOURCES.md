@@ -1,6 +1,6 @@
 # Test fixtures
 
-Every fixture is a real body that a source sent, trimmed by removing whole rows or pages. Nothing inside what is kept was changed. Source paths are in the handsard-scraper repo, under `plans/bill-debate-linking/`.
+Every fixture but the two made-up judgment pages under `elitigation/` is a real body that a source sent, trimmed by removing whole rows or pages. Nothing inside what is kept was changed. Source paths are in the handsard-scraper repo, under `plans/bill-debate-linking/`.
 
 | Fixture | Source | Archive stamp | Kept |
 |---|---|---|---|
@@ -30,12 +30,12 @@ Every fixture is a real body that a source sent, trimmed by removing whole rows 
 
 ## eLitigation
 
-Every file below is the whole body the eLitigation service sent, unchanged, fetched on 7 November 2026 with status 200 and content type `text/html; charset=utf-8`. No maintenance page was captured: the service gives none on demand, so no fixture holds one.
+Every file below but the two made-up judgment pages is the whole body the eLitigation service sent, unchanged, fetched on 7 November 2026 with status 200 and content type `text/html; charset=utf-8`. No maintenance page was captured: the service gives none on demand, so no fixture holds one.
 
 | Fixture | URL | Fetched | Status | Kept |
 |---|---|---|---|---|
 | `elitigation/supct-2025-page-1.html` | `https://www.elitigation.sg/gd/Home/Index?Filter=SUPCT&YearOfDecision=2025&SortBy=Score&CurrentPage=1` | 2026-11-07 | 200 | The whole page: 573 judgments found, 10 rows, a "Last" link to page 58. |
 | `elitigation/supct-2025-page-58.html` | `https://www.elitigation.sg/gd/Home/Index?Filter=SUPCT&YearOfDecision=2025&SortBy=Score&CurrentPage=58` | 2026-11-07 | 200 | The whole page: the last page of 2025, 3 rows, no "Last" link. |
 | `elitigation/statect-2025-system-error.html` | `https://www.elitigation.sg/gd/Home/Index?Filter=STATECT&YearOfDecision=2025&SortBy=Score&CurrentPage=1` | 2026-11-07 | 200 | The whole 4,226-byte page reading "A system error has occurred and the requested operation could not be completed." |
-| `elitigation/judgment-2025-sghc-267.html` | `https://www.elitigation.sg/gd/s/2025_SGHC_267` | 2026-11-07 | 200 | The whole judgment page, 15,153 bytes, with `[2025] SGHC 267` in `.HN-NeutralCit`. |
-| `elitigation/judgment-2026-sgdc-361.html` | `https://www.elitigation.sg/gd/s/2026_SGDC_361` | 2026-11-07 | 200 | The whole District Court judgment page, 59,800 bytes, as eLitigation run 3 stored it. It has no `.HN-NeutralCit`; `[2026] SGDC 361` is in its title. |
+| `elitigation/made-up-high-court-judgment.html` | None: written by hand | 2026-11-09 | None | Made up, with the court's markup and `[2099] SGHC 1` in `.HN-NeutralCit`. It replaced a real judgment page, because nothing is published until the Supreme Court agrees (ADR 0001). |
+| `elitigation/made-up-district-court-judgment.html` | None: written by hand | 2026-11-09 | None | Made up, with the court's markup. It has no `.HN-NeutralCit`, and `[2099] SGDC 1` is in its title. It replaced a real judgment page for the same reason. |

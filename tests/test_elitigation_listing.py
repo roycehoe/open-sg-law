@@ -15,9 +15,9 @@ _LAST_PAGE_HTML = (_FIXTURES_DIRECTORY / "supct-2025-page-58.html").read_text()
 _SYSTEM_ERROR_HTML = (
     _FIXTURES_DIRECTORY / "statect-2025-system-error.html"
 ).read_text()
-_JUDGMENT_HTML = (_FIXTURES_DIRECTORY / "judgment-2025-sghc-267.html").read_text()
+_JUDGMENT_HTML = (_FIXTURES_DIRECTORY / "made-up-high-court-judgment.html").read_text()
 _DISTRICT_COURT_JUDGMENT_HTML = (
-    _FIXTURES_DIRECTORY / "judgment-2026-sgdc-361.html"
+    _FIXTURES_DIRECTORY / "made-up-district-court-judgment.html"
 ).read_text()
 _YEAR_TOTAL = 573
 _YEAR_PAGE_COUNT = 58
@@ -63,13 +63,13 @@ def test_the_system_error_page_raises() -> None:
 
 
 def test_a_judgment_page_gives_its_neutral_citation() -> None:
-    assert get_elitigation_neutral_citation(_JUDGMENT_HTML) == "[2025] SGHC 267"
+    assert get_elitigation_neutral_citation(_JUDGMENT_HTML) == "[2099] SGHC 1"
 
 
 def test_a_district_court_page_gives_the_citation_in_its_title() -> None:
     assert (
         get_elitigation_neutral_citation(_DISTRICT_COURT_JUDGMENT_HTML)
-        == "[2026] SGDC 361"
+        == "[2099] SGDC 1"
     )
 
 

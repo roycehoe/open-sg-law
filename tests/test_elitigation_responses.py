@@ -47,7 +47,7 @@ _LAST_PAGE_BODY = (_FIXTURES_DIRECTORY / "supct-2025-page-58.html").read_bytes()
 _SYSTEM_ERROR_BODY = (
     _FIXTURES_DIRECTORY / "statect-2025-system-error.html"
 ).read_bytes()
-_JUDGMENT_BODY = (_FIXTURES_DIRECTORY / "judgment-2025-sghc-267.html").read_bytes()
+_JUDGMENT_BODY = (_FIXTURES_DIRECTORY / "made-up-high-court-judgment.html").read_bytes()
 _FIRST_PAGE_ANSWER = build_source_http_answer(200, _HTML_CONTENT_TYPE, _FIRST_PAGE_BODY)
 _LAST_PAGE_ANSWER = build_source_http_answer(200, _HTML_CONTENT_TYPE, _LAST_PAGE_BODY)
 _SYSTEM_ERROR_ANSWER = build_source_http_answer(
