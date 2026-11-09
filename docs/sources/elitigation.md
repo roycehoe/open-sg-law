@@ -17,9 +17,19 @@ Fetched on 7 November 2026: `Filter=SUPCT` lists the judgments of all three cour
 
 ## Error page
 
-`Filter=STATECT`, `Filter=FAMCT` and `Filter=ALL` each answer status 200 with a 4,226-byte page reading "A system error has occurred and the requested operation could not be completed." (fixture `tests/fixtures/elitigation/statect-2025-system-error.html`). The sg-legal-corpus project also saw a maintenance notice come back with status 200. No maintenance page could be captured on demand, so no fixture holds one.
+`Filter=STATECT`, `Filter=FAMCT` and `Filter=ALL` each answer status 200 with a 4,226-byte page reading "A system error has occurred and the requested operation could not be completed." (fixture `tests/fixtures/elitigation/statect-2025-system-error.html`). A maintenance notice also comes back with status 200, as the sg-legal-corpus project saw. Run 4 stored three, each 847 bytes and titled `:: eLitigation - Maintenance Notice ::`. No fixture holds one.
 
 A status of 200 does not show that a page holds judgments. A listing page with no total, and a judgment page whose title is not a neutral citation, are failures: the stage stores the body raw like any other, counts a failure, and leaves the URL for the next run. A judgment counts as stored when a 200 body has a title the neutral citation parser accepts. A failure on a year's first listing page halts the run. Reruns fetch listing pages again to find new judgments.
+
+## Audit of 9 November 2026
+
+Run 9 walked every year from 2026 down to 1965. Against the newest stored listing page of every year, the listings print 16,301 judgments and link 16,300 distinct pages, and all 16,300 are stored.
+
+- The listing for 2015 shows `/gd/s/2015_SGHC_3` twice, so the log reports 426 of 427 for that year.
+- `/gd/s/2013_SGHC115_` is stored, but its title prints as `[2013] SGHC115`, and the citation check rejects a title with no space before the number. Each run fetches the page again and counts one failure, which is run 9's one failure, and the log reports 346 of 347 for 2013.
+- Three stored bodies from run 4 are the maintenance notices above. A later run stored the judgment at each of those URLs.
+
+The code SGFC means two courts. The 80 pages from 1965 to 1969 are the Federal Court of the Republic of Singapore, and the 149 from 2024 on are the Family Courts.
 
 ## Pacing
 
